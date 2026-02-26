@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Testimonials from '../components/sections/Testimonials.astro';
 import CTA from '../components/sections/CTA.astro';
 ---
 
@@ -9,12 +8,19 @@ import CTA from '../components/sections/CTA.astro';
     <!-- Hero -->
     <section class="pt-36 pb-20 md:pt-44 md:pb-28">
       <div class="max-w-4xl mx-auto px-6 md:px-8">
-        <p class="animate-reveal text-(--color-accent) text-base tracking-wide mb-8" style="font-family: var(--font-mono);">
-          Consulting
-        </p>
+        <div class="animate-reveal mb-10">
+          <img
+            src="/olle.jpg"
+            alt="Olle Dyberg"
+            class="w-16 h-16 rounded-full object-cover border border-(--color-border) mb-6"
+          />
+          <p class="text-(--color-accent) text-base tracking-wide" style="font-family: var(--font-mono);">
+            Consulting
+          </p>
+        </div>
 
         <h1 class="animate-reveal delay-1 text-[2.5rem] md:text-[4rem] leading-[1.05] font-normal tracking-tight mb-10" style="font-family: var(--font-display);">
-          Implementation,<br />not slides.
+          Implementation, not slides.
         </h1>
 
         <p class="animate-reveal delay-2 text-(--color-text-secondary) text-lg leading-relaxed max-w-xl">
@@ -23,7 +29,7 @@ import CTA from '../components/sections/CTA.astro';
       </div>
     </section>
 
-    <!-- Services — clean typographic layout, not card grid -->
+    <!-- Services -->
     <section class="pb-24 md:pb-36">
       <div class="max-w-4xl mx-auto px-6 md:px-8">
         <hr class="rule mb-16" />
@@ -43,12 +49,13 @@ import CTA from '../components/sections/CTA.astro';
             </div>
           </div>
 
-          <!-- Sprint -->
-          <div class="grid md:grid-cols-[1fr_1.6fr] gap-8 md:gap-16">
+          <!-- Sprint — recommended -->
+          <div class="grid md:grid-cols-[1fr_1.6fr] gap-8 md:gap-16 border-l-2 border-(--color-accent) pl-6 md:pl-8 -ml-6 md:-ml-8">
             <div>
               <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-2" style="font-family: var(--font-mono);">Half day</p>
               <h3 class="text-2xl tracking-tight" style="font-family: var(--font-display);">Implementation Sprint</h3>
               <p class="text-xl text-(--color-accent) mt-2" style="font-family: var(--font-display);">€1,500</p>
+              <p class="text-sm text-(--color-accent) mt-1" style="font-family: var(--font-mono);">Recommended</p>
             </div>
             <div class="text-(--color-text-secondary) leading-relaxed">
               <p>
@@ -79,10 +86,6 @@ import CTA from '../components/sections/CTA.astro';
       <div class="max-w-4xl mx-auto px-6 md:px-8">
         <hr class="rule mb-16" />
 
-        <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-10" style="font-family: var(--font-mono);">
-          How it works
-        </p>
-
         <div class="grid md:grid-cols-3 gap-12 md:gap-16">
           <div>
             <p class="text-(--color-accent) text-base mb-3" style="font-family: var(--font-mono);">01</p>
@@ -93,8 +96,8 @@ import CTA from '../components/sections/CTA.astro';
           </div>
           <div>
             <p class="text-(--color-accent) text-base mb-3" style="font-family: var(--font-mono);">02</p>
-            <h3 class="text-xl tracking-tight" style="font-family: var(--font-display);">Build together</h3>
-            <p class="text-base text-(--color-muted) leading-relaxed mt-2">
+            <h3 class="text-xl tracking-tight mb-2" style="font-family: var(--font-display);">Build together</h3>
+            <p class="text-base text-(--color-muted) leading-relaxed">
               Workshop or sprint on your codebase. We build, not lecture. Your team leaves with muscle memory, not just notes.
             </p>
           </div>
@@ -109,7 +112,6 @@ import CTA from '../components/sections/CTA.astro';
       </div>
     </section>
 
-    <Testimonials />
     <CTA />
   </main>
 </Layout>
