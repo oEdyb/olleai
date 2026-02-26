@@ -1,0 +1,73 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const links = [
+  { label: "YouTube", href: "https://youtube.com/@olleai", icon: "youtube" },
+  { label: "TikTok", href: "https://tiktok.com/@olleai", icon: "tiktok" },
+  { label: "X / Twitter", href: "https://x.com/olaborgen", icon: "x" },
+  { label: "GitHub", href: "https://github.com/olleai", icon: "github" },
+  { label: "LinkedIn", href: "https://linkedin.com/in/olleai", icon: "linkedin" },
+];
+---
+
+<Layout>
+  <main class="flex flex-col items-center justify-center min-h-screen px-6 py-20">
+    <!-- Identity -->
+    <div class="text-center max-w-lg">
+      <div class="mb-8">
+        <div class="w-24 h-24 mx-auto rounded-full bg-(--color-surface) border border-white/10 flex items-center justify-center text-3xl font-semibold text-(--color-accent)">
+          O
+        </div>
+      </div>
+
+      <h1 class="text-3xl font-semibold tracking-tight mb-3">
+        Olle
+      </h1>
+
+      <p class="text-(--color-muted) text-lg leading-relaxed mb-2">
+        AI Engineer & Creator
+      </p>
+
+      <p class="text-(--color-muted) text-sm leading-relaxed max-w-md mx-auto mb-12">
+        I build with AI and share what I learn. Claude Code, context engineering, agent architectures — from research to production.
+      </p>
+    </div>
+
+    <!-- Links -->
+    <div class="w-full max-w-sm flex flex-col gap-3">
+      {links.map((link) => (
+        <a
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group flex items-center justify-between px-5 py-3.5 rounded-xl bg-(--color-surface) border border-white/5 hover:border-(--color-accent)/30 transition-all duration-200 hover:translate-y-[-1px]"
+        >
+          <span class="text-sm font-medium text-(--color-text) group-hover:text-white transition-colors">
+            {link.label}
+          </span>
+          <svg class="w-4 h-4 text-(--color-muted) group-hover:text-(--color-accent) transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H7M17 7v10" />
+          </svg>
+        </a>
+      ))}
+    </div>
+
+    <!-- Consulting CTA -->
+    <div class="mt-12 text-center">
+      <a
+        href="mailto:olle@olleai.com"
+        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-(--color-accent) text-white text-sm font-medium hover:bg-(--color-accent)/90 transition-all duration-200 hover:translate-y-[-1px]"
+      >
+        Work with me
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-20 text-(--color-muted) text-xs">
+      <span class="font-mono">olleai.com</span>
+    </footer>
+  </main>
+</Layout>
