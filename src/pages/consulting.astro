@@ -1,0 +1,115 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Testimonials from '../components/sections/Testimonials.astro';
+import CTA from '../components/sections/CTA.astro';
+---
+
+<Layout title="Consulting — Olle Dyberg" description="AI implementation consulting. Workshops, advisory, and hands-on sprints with your team's actual codebase.">
+  <main>
+    <!-- Hero -->
+    <section class="pt-36 pb-20 md:pt-44 md:pb-28">
+      <div class="max-w-4xl mx-auto px-6 md:px-8">
+        <p class="animate-reveal text-(--color-accent) text-base tracking-wide mb-8" style="font-family: var(--font-mono);">
+          Consulting
+        </p>
+
+        <h1 class="animate-reveal delay-1 text-[2.5rem] md:text-[4rem] leading-[1.05] font-normal tracking-tight mb-10" style="font-family: var(--font-display);">
+          Implementation,<br />not slides.
+        </h1>
+
+        <p class="animate-reveal delay-2 text-(--color-text-secondary) text-lg leading-relaxed max-w-xl">
+          I work with your team, on your codebase. Claude Code, agent architectures, context engineering — we build working systems in a single session.
+        </p>
+      </div>
+    </section>
+
+    <!-- Services — clean typographic layout, not card grid -->
+    <section class="pb-24 md:pb-36">
+      <div class="max-w-4xl mx-auto px-6 md:px-8">
+        <hr class="rule mb-16" />
+
+        <div class="space-y-20">
+          <!-- Workshop -->
+          <div class="grid md:grid-cols-[1fr_1.6fr] gap-8 md:gap-16">
+            <div>
+              <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-2" style="font-family: var(--font-mono);">2 hours</p>
+              <h3 class="text-2xl tracking-tight" style="font-family: var(--font-display);">Workshop</h3>
+              <p class="text-xl text-(--color-accent) mt-2" style="font-family: var(--font-display);">€500–800</p>
+            </div>
+            <div class="text-(--color-text-secondary) leading-relaxed">
+              <p>
+                Intensive hands-on session with your team. We work on your actual codebase — Claude Code setup, CLAUDE.md architecture, MCP integration, workflow optimization. You walk out with a working setup, not a PDF.
+              </p>
+            </div>
+          </div>
+
+          <!-- Sprint -->
+          <div class="grid md:grid-cols-[1fr_1.6fr] gap-8 md:gap-16">
+            <div>
+              <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-2" style="font-family: var(--font-mono);">Half day</p>
+              <h3 class="text-2xl tracking-tight" style="font-family: var(--font-display);">Implementation Sprint</h3>
+              <p class="text-xl text-(--color-accent) mt-2" style="font-family: var(--font-display);">€1,500</p>
+            </div>
+            <div class="text-(--color-text-secondary) leading-relaxed">
+              <p>
+                Four hours of deep implementation. We design and build an AI system together — agent pipelines, autonomous workflows, or production-grade Claude Code setups. Includes architecture documentation and 30 days of async email support.
+              </p>
+            </div>
+          </div>
+
+          <!-- Advisory -->
+          <div class="grid md:grid-cols-[1fr_1.6fr] gap-8 md:gap-16">
+            <div>
+              <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-2" style="font-family: var(--font-mono);">Ongoing</p>
+              <h3 class="text-2xl tracking-tight" style="font-family: var(--font-display);">Advisory</h3>
+              <p class="text-xl text-(--color-accent) mt-2" style="font-family: var(--font-display);">€100–150/hr</p>
+            </div>
+            <div class="text-(--color-text-secondary) leading-relaxed">
+              <p>
+                On-call AI expertise. Strategy calls, architecture reviews, code reviews, and troubleshooting. Flexible scheduling, async support included. For teams that want a dedicated AI advisor without a full-time hire.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section class="py-24 md:py-36">
+      <div class="max-w-4xl mx-auto px-6 md:px-8">
+        <hr class="rule mb-16" />
+
+        <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-10" style="font-family: var(--font-mono);">
+          How it works
+        </p>
+
+        <div class="grid md:grid-cols-3 gap-12 md:gap-16">
+          <div>
+            <p class="text-(--color-accent) text-base mb-3" style="font-family: var(--font-mono);">01</p>
+            <h3 class="text-xl tracking-tight mb-2" style="font-family: var(--font-display);">Discovery call</h3>
+            <p class="text-base text-(--color-muted) leading-relaxed">
+              30 minutes. Free. We talk about your team, your stack, what you're trying to build. I tell you honestly if I can help.
+            </p>
+          </div>
+          <div>
+            <p class="text-(--color-accent) text-base mb-3" style="font-family: var(--font-mono);">02</p>
+            <h3 class="text-xl tracking-tight" style="font-family: var(--font-display);">Build together</h3>
+            <p class="text-base text-(--color-muted) leading-relaxed mt-2">
+              Workshop or sprint on your codebase. We build, not lecture. Your team leaves with muscle memory, not just notes.
+            </p>
+          </div>
+          <div>
+            <p class="text-(--color-accent) text-base mb-3" style="font-family: var(--font-mono);">03</p>
+            <h3 class="text-xl tracking-tight mb-2" style="font-family: var(--font-display);">Follow through</h3>
+            <p class="text-base text-(--color-muted) leading-relaxed">
+              Documentation, async support, and a check-in to make sure everything sticks. I don't disappear after the invoice.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <Testimonials />
+    <CTA />
+  </main>
+</Layout>

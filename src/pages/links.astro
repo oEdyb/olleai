@@ -1,0 +1,71 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const social = [
+  { label: "YouTube", tag: "YT", href: "https://youtube.com/@olleai", note: "Tutorials and deep dives" },
+  { label: "TikTok", tag: "TT", href: "https://tiktok.com/@olleai", note: "700K+ views on AI tips" },
+  { label: "X / Twitter", tag: "X", href: "https://x.com/olaborgen", note: "Thoughts and threads" },
+  { label: "GitHub", tag: "GH", href: "https://github.com/oEdyb", note: "Open source" },
+  { label: "LinkedIn", tag: "LI", href: "https://linkedin.com/in/olle-dyberg-386230390", note: "Professional" },
+];
+---
+
+<Layout title="Links — Olle Dyberg" hideFooter>
+  <main class="flex flex-col items-center justify-center min-h-screen px-6 py-28">
+    <div class="w-full max-w-sm animate-reveal">
+      <!-- Identity -->
+      <div class="mb-12">
+        <img
+          src="/olle.jpg"
+          alt="Olle Dyberg"
+          class="w-20 h-20 rounded-full object-cover border border-(--color-border) mb-5"
+        />
+        <p class="text-sm text-(--color-muted) mb-3" style="font-family: var(--font-mono);">@olleai</p>
+        <h1 class="text-3xl tracking-tight mb-2" style="font-family: var(--font-display);">Olle Dyberg</h1>
+        <p class="text-base text-(--color-text-secondary)">AI engineer, creator, consultant.</p>
+      </div>
+
+      <!-- Primary -->
+      <div class="space-y-3 mb-8">
+        <a
+          href="/consulting"
+          class="group flex items-center justify-between py-3 border-b border-(--color-border) hover:border-(--color-accent)/40 transition-colors"
+        >
+          <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">Work with me</span>
+          <span class="text-sm text-(--color-muted)">&rarr;</span>
+        </a>
+        <a
+          href="mailto:olle@olleai.com"
+          class="group flex items-center justify-between py-3 border-b border-(--color-border) hover:border-(--color-accent)/40 transition-colors"
+        >
+          <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">olle@olleai.com</span>
+          <span class="text-sm text-(--color-muted)">&rarr;</span>
+        </a>
+      </div>
+
+      <!-- Social -->
+      <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-4" style="font-family: var(--font-mono);">Elsewhere</p>
+      <div class="space-y-2">
+        {social.map((link) => (
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex items-center gap-4 py-2.5 hover:translate-x-1 transition-transform"
+          >
+            <span class="w-7 text-sm text-(--color-accent) flex-shrink-0" style="font-family: var(--font-mono);">{link.tag}</span>
+            <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">{link.label}</span>
+            <span class="text-sm text-(--color-muted) hidden sm:inline">{link.note}</span>
+          </a>
+        ))}
+      </div>
+
+      <!-- Back -->
+      <div class="mt-14 pt-8 border-t border-(--color-border)/40">
+        <a href="/" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors" style="font-family: var(--font-mono);">
+          &larr; olleai.com
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,47 @@
+---
+const testimonials = [
+  {
+    quote: "Olle transformed how our team thinks about AI implementation. The workshop paid for itself within a week.",
+    name: "Placeholder",
+    context: "Workshop client",
+  },
+  {
+    quote: "Most consultants give you slides. Olle gave us a working system we could build on the next day.",
+    name: "Placeholder",
+    context: "Implementation sprint",
+  },
+  {
+    quote: "His depth on Claude Code and context engineering is genuinely best-in-class. Worth every euro.",
+    name: "Placeholder",
+    context: "Advisory client",
+  },
+];
+---
+
+<section class="py-24 md:py-36" id="testimonials">
+  <div class="max-w-4xl mx-auto px-6 md:px-8">
+    <hr class="rule mb-16" />
+
+    <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-10" style="font-family: var(--font-mono);">
+      What clients say
+    </p>
+
+    <!-- Pull quotes — editorial style, not card grid -->
+    <div class="space-y-16">
+      {testimonials.map((t) => (
+        <div class="max-w-2xl">
+          <blockquote class="text-xl md:text-2xl leading-relaxed tracking-tight text-(--color-text) mb-4" style="font-family: var(--font-display);">
+            &ldquo;{t.quote}&rdquo;
+          </blockquote>
+          <p class="text-base text-(--color-muted)">
+            <span class="text-(--color-text-secondary)">{t.name}</span> &middot; {t.context}
+          </p>
+        </div>
+      ))}
+    </div>
+
+    <p class="mt-12 text-sm text-(--color-muted) italic" style="font-family: var(--font-mono);">
+      Real testimonials replacing placeholders soon.
+    </p>
+  </div>
+</section>
