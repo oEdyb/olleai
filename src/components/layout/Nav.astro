@@ -6,7 +6,7 @@ const currentPath = Astro.url.pathname;
   <div class="max-w-4xl mx-auto px-6 md:px-8">
     <div class="flex items-center justify-between h-16">
       <a href="/" class="group">
-        <span class="text-xl tracking-tight text-(--color-text) group-hover:text-(--color-accent) transition-colors" style="font-family: var(--font-display);">
+        <span class="font-body text-base font-medium tracking-wide text-(--color-text) group-hover:text-(--color-accent) transition-colors">
           Olle Dyberg
         </span>
       </a>
@@ -15,24 +15,22 @@ const currentPath = Astro.url.pathname;
         <a
           href="/consulting"
           class:list={[
-            "text-xs uppercase tracking-[0.15em] transition-colors",
+            "font-mono text-xs uppercase tracking-[0.15em] transition-colors",
             currentPath.startsWith("/consulting")
               ? "text-(--color-text)"
               : "text-(--color-muted) hover:text-(--color-text-secondary)",
           ]}
-          style="font-family: var(--font-mono);"
         >
           Consulting
         </a>
         <a
           href="/links"
           class:list={[
-            "text-xs uppercase tracking-[0.15em] transition-colors",
+            "font-mono text-xs uppercase tracking-[0.15em] transition-colors",
             currentPath.startsWith("/links")
               ? "text-(--color-text)"
               : "text-(--color-muted) hover:text-(--color-text-secondary)",
           ]}
-          style="font-family: var(--font-mono);"
         >
           Links
         </a>

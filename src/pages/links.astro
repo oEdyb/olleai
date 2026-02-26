@@ -20,8 +20,8 @@ const social = [
           alt="Olle Dyberg"
           class="w-24 h-24 rounded-full object-cover border border-(--color-border) mb-5"
         />
-        <h1 class="text-3xl tracking-tight mb-2" style="font-family: var(--font-display);">Olle Dyberg</h1>
-        <p class="text-sm text-(--color-muted) mb-3" style="font-family: var(--font-mono);">@olleai</p>
+        <h1 class="font-display text-3xl tracking-tight mb-2">Olle Dyberg</h1>
+        <p class="font-mono text-sm text-(--color-muted) mb-3">@olleai</p>
         <p class="text-base text-(--color-text-secondary)">AI engineer, creator, consultant.</p>
       </div>
 
@@ -44,7 +44,7 @@ const social = [
       </div>
 
       <!-- Social -->
-      <p class="text-sm text-(--color-muted) tracking-wide uppercase mb-4" style="font-family: var(--font-mono);">Elsewhere</p>
+      <p class="font-mono text-sm text-(--color-muted) tracking-wide uppercase mb-4">Elsewhere</p>
       <div class="space-y-2">
         {social.map((link) => (
           <a
@@ -53,7 +53,7 @@ const social = [
             rel="noopener noreferrer"
             class="group flex items-center gap-4 py-2.5 hover:translate-x-1 transition-transform"
           >
-            <span class="w-7 text-sm text-(--color-accent) flex-shrink-0" style="font-family: var(--font-mono);">{link.tag}</span>
+            <span class="font-mono w-7 text-sm text-(--color-accent) flex-shrink-0">{link.tag}</span>
             <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">{link.label}</span>
             <span class="text-sm text-(--color-muted) hidden sm:inline">{link.note}</span>
           </a>
@@ -62,7 +62,7 @@ const social = [
 
       <!-- Back -->
       <div class="mt-14 pt-8 border-t border-(--color-border)/40">
-        <a href="/" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors" style="font-family: var(--font-mono);">
+        <a href="/" class="font-mono text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">
           &larr; olleai.com
         </a>
       </div>
