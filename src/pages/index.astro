@@ -10,7 +10,7 @@ import CTA from '../components/sections/CTA.astro';
 const locale = getLocale(Astro);
 ---
 
-<Layout>
+<Layout locale={locale}>
   <main>
     <Hero locale={locale} />
     <SocialProof locale={locale} />

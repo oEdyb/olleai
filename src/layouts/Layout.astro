@@ -9,7 +9,6 @@ interface Props {
   title?: string;
   description?: string;
   locale?: string;
-  hideNav?: boolean;
   hideFooter?: boolean;
 }
 
@@ -17,7 +16,6 @@ const {
   title = "Olle Dyberg",
   description = "AI engineer and consultant. I build with Claude Code and help teams do the same — agents, context engineering, production systems.",
   locale = "en",
-  hideNav = false,
   hideFooter = false,
 } = Astro.props;
 
@@ -72,8 +70,8 @@ const siteSchema = JSON.stringify({
     <link rel="alternate" hreflang="x-default" href={enUrl.href} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" /></noscript>
     <title>{title}</title>
     <script type="application/ld+json" set:html={personSchema} />
     <script type="application/ld+json" set:html={siteSchema} />
@@ -91,7 +89,7 @@ const siteSchema = JSON.stringify({
     P.S. I traded photons for tokens. Best trade I ever made.
   -->
   <body class="grain min-h-screen">
-    {!hideNav && <Nav locale={locale} />}
+    <Nav locale={locale} />
     <slot />
     {!hideFooter && <Footer locale={locale} />}
   </body>

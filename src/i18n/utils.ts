@@ -29,10 +29,9 @@ export function getAlternatePath(pathname: string, currentLocale: string): strin
 
   if (currentLocale === 'sv') {
     // Strip /sv prefix to get the English path
-    const withoutPrefix = normalized.replace(/^\/sv/, '') || '/';
-    return withoutPrefix;
+    return normalized.replace(/^\/sv/, '') || '/';
   }
 
   // Add /sv prefix for Swedish path
-  return `/sv${normalized === '/' ? '' : normalized}` || '/sv';
+  return normalized === '/' ? '/sv' : `/sv${normalized}`;
 }

@@ -11,8 +11,6 @@ export const onRequest: MiddlewareHandler = (context, next) => {
     return next();
   }
 
-  const request = context.request;
-
   // If user navigates to a locale path, set their preference cookie
   const isSwedishPath = pathname === '/sv' || pathname.startsWith('/sv/');
   const cookies = context.cookies;
@@ -32,7 +30,7 @@ export const onRequest: MiddlewareHandler = (context, next) => {
   }
 
   // IP-based detection for Swedish visitors
-  const country = request.headers.get('cf-ipcountry') ?? '';
+  const country = context.request.headers.get('cf-ipcountry') ?? '';
 
   if (country === 'SE') {
     // Swedish visitor on English path with no preference — redirect to Swedish
