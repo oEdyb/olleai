@@ -1,12 +1,12 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import CTA from '../components/sections/CTA.astro';
-import { t, getLocale } from '../i18n/utils';
+import Layout from '../../layouts/Layout.astro';
+import CTA from '../../components/sections/CTA.astro';
+import { t } from '../../i18n/utils';
 
-const locale = getLocale(Astro);
+const locale = 'sv';
 ---
 
-<Layout title="Consulting — Olle Dyberg" description="AI strategy and implementation consulting. Claude Code, agents, context engineering. Let's talk before we build.">
+<Layout locale={locale} title="Konsulting — Olle Dyberg" description="AI-strategi och implementeringskonsulting. Claude Code, agenter, context engineering. Vi pratar innan vi bygger.">
   <main>
     <!-- Hero -->
     <section class="pt-32 pb-16 md:pt-40 md:pb-20">
@@ -50,7 +50,7 @@ const locale = getLocale(Astro);
             </div>
           </div>
 
-          <!-- Deep Dive — recommended -->
+          <!-- Deep Dive -->
           <div class="grid md:grid-cols-[1fr_1.6fr] gap-8 md:gap-16 border-l-2 border-(--color-accent) pl-6 md:pl-8 -ml-6 md:-ml-8">
             <div>
               <p class="font-mono text-sm text-(--color-muted) tracking-wide uppercase mb-2">{t('consulting.deepdive.duration', locale)}</p>
@@ -121,6 +121,6 @@ const locale = getLocale(Astro);
       </div>
     </section>
 
-    <CTA locale={locale} />
+    <CTA />
   </main>
 </Layout>

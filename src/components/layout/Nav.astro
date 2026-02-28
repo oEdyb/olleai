@@ -1,11 +1,20 @@
 ---
+import { t, getAlternatePath } from '../../i18n/utils';
+
+interface Props {
+  locale?: string;
+}
+
+const { locale = 'en' } = Astro.props;
 const currentPath = Astro.url.pathname;
+const alternatePath = getAlternatePath(currentPath, locale);
+const prefix = locale === 'sv' ? '/sv' : '';
 ---
 
 <nav class="fixed top-0 left-0 right-0 z-50 bg-(--color-bg)/90 backdrop-blur-md border-b border-(--color-border)/40">
   <div class="max-w-4xl mx-auto px-6 md:px-8">
     <div class="flex items-center justify-between h-16">
-      <a href="/" class="group">
+      <a href={`${prefix}/`} class="group">
         <span class="font-body text-base font-medium tracking-wide text-(--color-text) group-hover:text-(--color-accent) transition-colors">
           Olle Dyberg
         </span>
@@ -13,26 +22,51 @@ const currentPath = Astro.url.pathname;
 
       <div class="flex items-center gap-6">
         <a
-          href="/consulting"
+          href={`${prefix}/consulting`}
           class:list={[
             "font-mono text-xs uppercase tracking-[0.15em] transition-colors",
-            currentPath.startsWith("/consulting")
+            currentPath.startsWith(`${prefix}/consulting`)
               ? "text-(--color-text)"
               : "text-(--color-muted) hover:text-(--color-text-secondary)",
           ]}
         >
-          Consulting
+          {t('nav.consulting', locale)}
         </a>
         <a
-          href="/links"
+          href={`${prefix}/links`}
           class:list={[
             "font-mono text-xs uppercase tracking-[0.15em] transition-colors",
-            currentPath.startsWith("/links")
+            currentPath.startsWith(`${prefix}/links`)
               ? "text-(--color-text)"
               : "text-(--color-muted) hover:text-(--color-text-secondary)",
           ]}
         >
-          Links
+          {t('nav.links', locale)}
+        </a>
+
+        <span class="text-(--color-border) select-none">|</span>
+
+        <a
+          href={locale === 'en' ? currentPath : alternatePath}
+          class:list={[
+            "font-mono text-xs tracking-[0.15em] transition-colors",
+            locale === 'en'
+              ? "text-(--color-text)"
+              : "text-(--color-muted) hover:text-(--color-text-secondary)",
+          ]}
+        >
+          EN
+        </a>
+        <a
+          href={locale === 'sv' ? currentPath : alternatePath}
+          class:list={[
+            "font-mono text-xs tracking-[0.15em] transition-colors",
+            locale === 'sv'
+              ? "text-(--color-text)"
+              : "text-(--color-muted) hover:text-(--color-text-secondary)",
+          ]}
+        >
+          SV
         </a>
       </div>
     </div>

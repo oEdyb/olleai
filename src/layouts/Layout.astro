@@ -1,11 +1,14 @@
 ---
 import '../styles/global.css'
+import { ViewTransitions } from 'astro:transitions';
 import Nav from '../components/layout/Nav.astro';
 import Footer from '../components/layout/Footer.astro';
+import { getAlternatePath } from '../i18n/utils';
 
 interface Props {
   title?: string;
   description?: string;
+  locale?: string;
   hideNav?: boolean;
   hideFooter?: boolean;
 }
@@ -13,12 +16,44 @@ interface Props {
 const {
   title = "Olle Dyberg",
   description = "AI engineer and consultant. I build with Claude Code and help teams do the same — agents, context engineering, production systems.",
+  locale = "en",
   hideNav = false,
   hideFooter = false,
 } = Astro.props;
+
+const currentPath = Astro.url.pathname;
+const canonicalUrl = new URL(currentPath, 'https://olleai.com');
+const alternatePath = getAlternatePath(currentPath, locale);
+const alternateUrl = new URL(alternatePath, 'https://olleai.com');
+const enUrl = locale === 'en' ? canonicalUrl : alternateUrl;
+const svUrl = locale === 'sv' ? canonicalUrl : alternateUrl;
+
+const personSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Olle Dyberg",
+  url: "https://olleai.com",
+  jobTitle: locale === 'sv' ? "AI-ingenjör & konsult" : "AI Engineer & Consultant",
+  sameAs: [
+    "https://tiktok.com/@olleai",
+    "https://youtube.com/@olleai",
+    "https://github.com/oEdyb",
+    "https://www.linkedin.com/in/olledyberg/",
+    "https://x.com/olledyberg",
+  ],
+  knowsLanguage: ["en", "sv"],
+});
+
+const siteSchema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Olle Dyberg",
+  url: "https://olleai.com",
+  inLanguage: ["en", "sv"],
+});
 ---
 
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -26,18 +61,38 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content={locale === 'sv' ? 'sv_SE' : 'en_US'} />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalUrl.href} />
+    <link rel="alternate" hreflang="en" href={enUrl.href} />
+    <link rel="alternate" hreflang="sv" href={svUrl.href} />
+    <link rel="alternate" hreflang="x-default" href={enUrl.href} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <title>{title}</title>
+    <script type="application/ld+json" set:html={personSchema} />
+    <script type="application/ld+json" set:html={siteSchema} />
+    <ViewTransitions />
   </head>
+  <!--
+    You're inspecting the source. Good instinct.
+
+    This site was built by one person with Claude Code —
+    no framework templates, no agency, no team.
+
+    If you want to know how: https://tiktok.com/@olleai
+    If you want to work together: olledyb@gmail.com
+
+    P.S. I traded photons for tokens. Best trade I ever made.
+  -->
   <body class="grain min-h-screen">
-    {!hideNav && <Nav />}
+    {!hideNav && <Nav locale={locale} />}
     <slot />
-    {!hideFooter && <Footer />}
+    {!hideFooter && <Footer locale={locale} />}
   </body>
 </html>

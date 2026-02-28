@@ -1,14 +1,21 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { getLocale } from '../i18n/utils';
 import Hero from '../components/sections/Hero.astro';
+import SocialProof from '../components/sections/SocialProof.astro';
+import Testimonials from '../components/sections/Testimonials.astro';
 import About from '../components/sections/About.astro';
 import CTA from '../components/sections/CTA.astro';
+
+const locale = getLocale(Astro);
 ---
 
 <Layout>
   <main>
-    <Hero />
-    <About />
-    <CTA />
+    <Hero locale={locale} />
+    <SocialProof locale={locale} />
+    <Testimonials locale={locale} />
+    <About locale={locale} />
+    <CTA locale={locale} />
   </main>
 </Layout>

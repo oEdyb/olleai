@@ -1,0 +1,74 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { t } from '../../i18n/utils';
+
+const locale = 'sv';
+
+const social = [
+  { label: "YouTube", tag: "YT", href: "https://youtube.com/@olleai", note: t('links.yt.note', locale) },
+  { label: "TikTok", tag: "TT", href: "https://tiktok.com/@olleai", note: t('links.tt.note', locale) },
+  { label: "X / Twitter", tag: "X", href: "https://x.com/olledyberg", note: t('links.x.note', locale) },
+  { label: "GitHub", tag: "GH", href: "https://github.com/oEdyb", note: t('links.gh.note', locale) },
+  { label: "LinkedIn", tag: "LI", href: "https://www.linkedin.com/in/olledyberg/", note: t('links.li.note', locale) },
+];
+---
+
+<Layout locale={locale} title="Länkar — Olle Dyberg" hideFooter>
+  <main class="flex flex-col items-center justify-center min-h-screen px-6 py-28">
+    <div class="w-full max-w-sm animate-reveal">
+      <!-- Identity -->
+      <div class="mb-12">
+        <img
+          src="/olle.jpg"
+          alt="Olle Dyberg"
+          class="w-24 h-24 rounded-full object-cover border border-(--color-border) mb-5"
+        />
+        <h1 class="font-display text-3xl tracking-tight mb-2">Olle Dyberg</h1>
+        <p class="font-mono text-sm text-(--color-muted) mb-3">@olleai</p>
+        <p class="text-base text-(--color-text-secondary)">{t('links.subtitle', locale)}</p>
+      </div>
+
+      <!-- Primary -->
+      <div class="space-y-3 mb-8">
+        <a
+          href="/sv/consulting"
+          class="group flex items-center justify-between py-3 border-b border-(--color-border) hover:border-(--color-accent)/40 transition-colors"
+        >
+          <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">{t('links.work', locale)}</span>
+          <span class="text-sm text-(--color-muted)">&rarr;</span>
+        </a>
+        <a
+          href="mailto:olledyb@gmail.com"
+          class="group flex items-center justify-between py-3 border-b border-(--color-border) hover:border-(--color-accent)/40 transition-colors"
+        >
+          <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">olledyb@gmail.com</span>
+          <span class="text-sm text-(--color-muted)">&rarr;</span>
+        </a>
+      </div>
+
+      <!-- Social -->
+      <p class="font-mono text-sm text-(--color-muted) tracking-wide uppercase mb-4">{t('links.elsewhere', locale)}</p>
+      <div class="space-y-2">
+        {social.map((link) => (
+          <a
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex items-center gap-4 py-2.5 hover:translate-x-1 transition-transform"
+          >
+            <span class="font-mono w-7 text-sm text-(--color-accent) flex-shrink-0">{link.tag}</span>
+            <span class="text-base text-(--color-text) group-hover:text-(--color-accent) transition-colors">{link.label}</span>
+            <span class="text-sm text-(--color-muted) hidden sm:inline">{link.note}</span>
+          </a>
+        ))}
+      </div>
+
+      <!-- Back -->
+      <div class="mt-14 pt-8 border-t border-(--color-border)/40">
+        <a href="/sv" class="font-mono text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">
+          &larr; {t('links.back', locale)}
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout>

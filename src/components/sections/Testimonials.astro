@@ -1,0 +1,44 @@
+---
+import { t } from '../../i18n/utils';
+
+interface Props {
+  locale?: string;
+}
+
+const { locale = "en" } = Astro.props;
+
+const clients = [
+  {
+    name: "Matyas Dios",
+    role: t("testimonials.matyas.role", locale),
+    company: t("testimonials.matyas.company", locale),
+    photo: "/matyas.webp",
+  },
+];
+---
+
+<section class="py-20 md:py-28">
+  <div class="max-w-4xl mx-auto px-6 md:px-8">
+    <hr class="rule mb-16" />
+
+    <p class="font-mono text-(--color-muted) text-xs tracking-widest uppercase mb-12">{t("testimonials.label", locale)}</p>
+
+    <div class="flex flex-wrap gap-8">
+      {clients.map((client) => (
+        <div class="flex items-center gap-4">
+          <img
+            src={client.photo}
+            alt={client.name}
+            class="w-12 h-12 rounded-full object-cover border border-(--color-border)"
+          />
+          <div>
+            <p class="text-sm font-medium text-(--color-text)">{client.name}</p>
+            <p class="font-mono text-xs text-(--color-muted) tracking-wide">
+              {client.role}, {client.company}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
