@@ -11,8 +11,12 @@
   "socialproof.yt.stat": "Guider & djupdykningar",
   "socialproof.tt.stat": "1M+ visningar",
   "socialproof.x.stat": "Korta tankar",
-  "socialproof.sk.stat": "Gratis community",
   "socialproof.gh.stat": "\u00d6ppen k\u00e4llkod",
+
+  "community.label": "Community",
+  "community.headline": "L\u00e4r dig context engineering med andra byggare.",
+  "community.description": "Gratis Skool-community d\u00e4r vi delar vad som fungerar, vad som inte g\u00f6r det, och hur man faktiskt levererar med AI. Ingen fluff.",
+  "community.cta": "G\u00e5 med gratis",
 
   "testimonials.label": "Jobbar med",
   "testimonials.matyas.role": "Grundare",
