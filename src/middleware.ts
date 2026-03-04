@@ -1,7 +1,9 @@
 import type { MiddlewareHandler } from 'astro';
 
-const STATIC_PATTERN = /\.(jpg|jpeg|png|gif|svg|ico|webp|avif|css|js|woff2?|ttf|eot|map|json)$/i;
+const STATIC_PATTERN = /\.(jpg|jpeg|png|gif|svg|ico|webp|avif|css|js|woff2?|ttf|eot|map|json|xml|txt)$/i;
 const SKIP_PREFIXES = ['/_astro/', '/api/', '/_image'];
+const ONE_YEAR = 60 * 60 * 24 * 365;
+const COOKIE_OPTIONS = { path: '/', maxAge: ONE_YEAR, sameSite: 'lax' as const, secure: true };
 
 export const onRequest: MiddlewareHandler = (context, next) => {
   try {
@@ -26,7 +28,7 @@ export const onRequest: MiddlewareHandler = (context, next) => {
 
     // If user is actively navigating to a locale, set the cookie and continue
     if (isSwedishPath) {
-      cookies.set('lang-pref', 'sv', { path: '/', maxAge: 60 * 60 * 24 * 365 });
+      cookies.set('lang-pref', 'sv', COOKIE_OPTIONS);
       return next();
     }
 
@@ -41,16 +43,17 @@ export const onRequest: MiddlewareHandler = (context, next) => {
         status: 302,
         headers: {
           Location: redirectUrl.toString(),
-          'Set-Cookie': `lang-pref=sv; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`,
+          'Set-Cookie': `lang-pref=sv; Path=/; Max-Age=${ONE_YEAR}; SameSite=Lax; Secure`,
         },
       });
     }
 
     // Non-Swedish visitors on English path — set preference so we don't check again
-    cookies.set('lang-pref', 'en', { path: '/', maxAge: 60 * 60 * 24 * 365 });
+    cookies.set('lang-pref', 'en', COOKIE_OPTIONS);
     return next();
-  } catch {
+  } catch (e) {
     // Never crash the worker — serve the page without locale detection
+    console.error('Middleware locale detection failed:', e);
     return next();
   }
 };
