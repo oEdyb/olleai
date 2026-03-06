@@ -165,3 +165,97 @@ body {
   height: 1px;
   background: linear-gradient(to right, var(--color-border), transparent);
 }
+
+/* ─── Hero photo hover ─── */
+
+.hero-photo {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+}
+
+.hero-photo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* ─── Social proof card hover ─── */
+
+.social-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.social-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.social-card:hover .social-icon {
+  animation: icon-bounce 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes icon-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+  60% { transform: translateY(-2px); }
+}
+
+/* ─── About photo parallax hint ─── */
+
+.about-photo {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.about-photo:hover {
+  transform: scale(1.02) rotate(-0.5deg);
+}
+
+/* ─── ASCII sprites ─── */
+
+.sprite {
+  opacity: 0.1;
+  transition: opacity 0.6s ease;
+  position: absolute;
+}
+
+.sprite-wrapper:hover .sprite {
+  opacity: 0.3;
+}
+
+/* ─── Skool logo ─── */
+
+.skool-logo {
+  letter-spacing: 0.02em;
+}
+
+/* ─── Konami easter egg flash ─── */
+
+@keyframes amber-flash {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#konami-msg {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  pointer-events: none;
+  opacity: 0;
+}
+
+#konami-msg.show {
+  animation: amber-flash 2.5s ease both;
+  pointer-events: auto;
+}
+
+#konami-msg span {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  color: var(--color-accent);
+  text-shadow: 0 0 30px var(--color-accent);
+  letter-spacing: 0.1em;
+}

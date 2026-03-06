@@ -1,5 +1,6 @@
 ---
 import { t } from '../../i18n/utils';
+import Sprite from '../Sprite.astro';
 
 interface Props {
   locale?: string;
@@ -17,7 +18,10 @@ const clients = [
 ];
 ---
 
-<section class="py-20 md:py-28">
+<section class="py-20 md:py-28 relative sprite-wrapper overflow-hidden">
+  <Sprite type="skull" class="top-10 right-[28%]" />
+  <Sprite type="snake" class="bottom-8 left-[15%]" />
+
   <div class="max-w-4xl mx-auto px-6 md:px-8">
     <p class="font-mono text-(--color-muted) text-xs tracking-widest uppercase mb-12">{t("testimonials.label", locale)}</p>
 

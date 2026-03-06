@@ -1,5 +1,6 @@
 ---
 import { t } from '../../i18n/utils';
+import Sprite from '../Sprite.astro';
 
 interface Props {
   locale?: string;
@@ -10,7 +11,10 @@ const year = new Date().getFullYear();
 const copyright = t('footer.copyright', locale).replace('{year}', String(year));
 ---
 
-<footer>
+<footer class="relative sprite-wrapper overflow-hidden">
+  <Sprite type="coffee" class="top-6 right-[30%]" />
+  <Sprite type="sparkle" class="top-10 left-[25%]" />
+
   <div class="max-w-4xl mx-auto px-6 md:px-8 py-16 md:py-20">
     <hr class="rule mb-12" />
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

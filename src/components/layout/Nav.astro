@@ -33,6 +33,17 @@ const prefix = locale === 'sv' ? '/sv' : '';
           {t('nav.consulting', locale)}
         </a>
         <a
+          href="https://www.skool.com/ctx/about"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-mono text-xs uppercase tracking-[0.15em] py-2 relative group/skool"
+        >
+          <span class="text-(--color-muted) group-hover/skool:opacity-0 transition-opacity">{t('nav.community', locale)}</span>
+          <span class="skool-logo absolute inset-0 flex items-center justify-center opacity-0 group-hover/skool:opacity-100 transition-opacity" aria-hidden="true">
+            <span class="text-[#2d4a7a]">s</span><span class="text-[#c0392b]">k</span><span class="text-[#c8a55a]">o</span><span class="text-[#5ba4cf]">o</span><span class="text-[#a0522d]">l</span>
+          </span>
+        </a>
+        <a
           href={`${prefix}/links`}
           class:list={[
             "font-mono text-xs uppercase tracking-[0.15em] transition-colors py-2",

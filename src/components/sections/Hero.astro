@@ -1,5 +1,6 @@
 ---
 import { t } from '../../i18n/utils';
+import Sprite from '../Sprite.astro';
 
 interface Props {
   locale?: string;
@@ -8,7 +9,11 @@ interface Props {
 const { locale = "en" } = Astro.props;
 ---
 
-<section class="pt-36 pb-20 md:pt-48 md:pb-28">
+<section class="pt-36 pb-20 md:pt-48 md:pb-28 relative sprite-wrapper overflow-hidden">
+  <Sprite type="terminal" class="top-44 right-[15%] lg:right-[20%]" />
+  <Sprite type="cat" class="bottom-12 left-[10%] lg:left-[18%]" />
+  <Sprite type="sparkle" class="top-32 right-[35%]" />
+
   <div class="max-w-4xl mx-auto px-6 md:px-8">
     <div class="animate-reveal mb-6 md:mb-8">
       <img
@@ -17,7 +22,7 @@ const { locale = "en" } = Astro.props;
         width="80"
         height="80"
         fetchpriority="high"
-        class="w-20 h-20 rounded-full object-cover border border-(--color-border)"
+        class="hero-photo w-20 h-20 rounded-full object-cover border border-(--color-border)"
       />
     </div>
 

@@ -1,5 +1,6 @@
 ---
 import { t } from '../../i18n/utils';
+import Sprite from '../Sprite.astro';
 
 interface Props {
   locale?: string;
@@ -8,26 +9,51 @@ interface Props {
 const { locale = "en" } = Astro.props;
 ---
 
-<section class="py-16 md:py-24 bg-(--color-surface)">
-  <div class="max-w-4xl mx-auto px-6 md:px-8 text-center">
-    <p class="font-mono text-(--color-accent) text-xs tracking-widest uppercase mb-6">{t("community.label", locale)}</p>
-    <h2 class="font-display text-3xl md:text-5xl leading-tight tracking-tight mb-6 mx-auto max-w-2xl">
-      {t("community.headline", locale)}
-    </h2>
-    <p class="text-(--color-text-secondary) text-lg leading-relaxed mb-10 mx-auto max-w-lg">
-      {t("community.description", locale)}
-    </p>
+<section class="py-16 md:py-24 bg-(--color-surface) relative sprite-wrapper overflow-hidden">
+  <Sprite type="robot" class="top-16 right-[18%]" />
+  <Sprite type="alien" class="bottom-20 left-[22%]" />
+  <Sprite type="mushroom" class="top-[45%] right-[12%]" />
 
-    <a
-      href="https://www.skool.com/ctx/about"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="inline-flex items-center gap-3 px-8 py-4 text-base font-medium text-(--color-bg) bg-(--color-accent) hover:bg-(--color-accent-hover) rounded-lg transition-colors group"
-    >
-      <span>{t("community.cta", locale)}</span>
-      <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-      </svg>
-    </a>
+  <div class="max-w-4xl mx-auto px-6 md:px-8">
+    <div class="mb-10 rounded-lg overflow-hidden border border-(--color-border)">
+      <img
+        src="/skool-cover.webp"
+        alt="Context Engineers — terminal-style community banner"
+        width="1400"
+        height="790"
+        loading="lazy"
+        decoding="async"
+        class="w-full"
+      />
+    </div>
+
+    <div class="text-center">
+      <p class="font-mono text-(--color-accent) text-xs tracking-widest uppercase mb-6">{t("community.label", locale)}</p>
+      <h2 class="font-display text-3xl md:text-5xl leading-tight tracking-tight mb-6 mx-auto max-w-2xl">
+        {t("community.headline", locale)}
+      </h2>
+      <p class="text-(--color-text-secondary) text-lg leading-relaxed mb-10 mx-auto max-w-lg">
+        {t("community.description", locale)}
+      </p>
+
+      <a
+        href="https://www.skool.com/ctx/about"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-3 px-8 py-4 text-base font-medium text-(--color-bg) bg-(--color-accent) hover:bg-(--color-accent-hover) rounded-lg transition-colors group"
+      >
+        <span>{t("community.cta", locale)}</span>
+        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </a>
+
+      <p class="mt-6 text-(--color-muted) text-sm flex items-center justify-center gap-2">
+        <span>{t("community.powered", locale)}</span>
+        <span class="skool-logo font-mono text-sm font-medium tracking-wide">
+          <span class="text-[#2d4a7a]">s</span><span class="text-[#c0392b]">k</span><span class="text-[#c8a55a]">o</span><span class="text-[#5ba4cf]">o</span><span class="text-[#a0522d]">l</span>
+        </span>
+      </p>
+    </div>
   </div>
 </section>

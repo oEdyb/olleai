@@ -1,0 +1,154 @@
+---
+/**
+ * Decorative ASCII sprites. Monospace, amber, subtle.
+ * Placed as positioned elements in section margins.
+ */
+interface Props {
+  type: string;
+  class?: string;
+}
+
+const { type, class: className = '' } = Astro.props;
+
+const sprites: Record<string, string> = {
+  terminal: [
+    '┌──────────┐',
+    '│ >_ █     │',
+    '│          │',
+    '└──────────┘',
+  ].join('\n'),
+
+  robot: [
+    '   ┌───┐   ',
+    '   │ ◉ │   ',
+    '  ┌┴───┴┐  ',
+    '  │ ═══ │  ',
+    '  └┬───┬┘  ',
+    '   │   │   ',
+  ].join('\n'),
+
+  brackets: [
+    '  {       ',
+    '    ...   ',
+    '  }       ',
+  ].join('\n'),
+
+  coffee: [
+    '   ) )  ',
+    '  (   ) ',
+    ' ┌─────┐',
+    ' │     │',
+    ' ╰──┬──╯',
+  ].join('\n'),
+
+  ghost: [
+    '  ╭───╮  ',
+    '  │◉ ◉│  ',
+    '  │ ○ │  ',
+    '  │   │  ',
+    '  ╰┬─┬╯  ',
+  ].join('\n'),
+
+  cat: [
+    '  /\\_/\\  ',
+    ' ( o.o ) ',
+    '  > ^ <  ',
+    ' /│   │\\ ',
+  ].join('\n'),
+
+  cactus: [
+    '    ┃    ',
+    '  ╭─┃    ',
+    '  │ ┃─╮  ',
+    '  ╰─┃ │  ',
+    '    ┃─╯  ',
+    '    ┃    ',
+    '  ╭─┴─╮  ',
+  ].join('\n'),
+
+  skull: [
+    '  ╭───╮  ',
+    '  │● ●│  ',
+    '  │ ▲ │  ',
+    '  ╰┬┬┬╯  ',
+  ].join('\n'),
+
+  ufo: [
+    '    ○     ',
+    '  ╱───╲   ',
+    ' ╱ ◉◉◉ ╲  ',
+    ' ╲─────╱  ',
+    '   ╲─╱    ',
+    '  ~ ~ ~   ',
+  ].join('\n'),
+
+  wizard: [
+    '    ╱╲    ',
+    '   ╱★ ╲   ',
+    '  ╱────╲  ',
+    '  │◉  ◉│  ',
+    '  │ ── │  ',
+    '  ╰────╯  ',
+  ].join('\n'),
+
+  fish: [
+    '       ╱╲  ',
+    ' ><(((°>   ',
+    '       ╲╱  ',
+  ].join('\n'),
+
+  heart: [
+    ' ╭╮ ╭╮ ',
+    ' ╰╮╭╯╰╮',
+    '  ╰╯  │',
+    '   ╰──╯',
+  ].join('\n'),
+
+  penguin: [
+    '   (°)   ',
+    '  /| |\\  ',
+    '  \\| |/  ',
+    '   d b   ',
+  ].join('\n'),
+
+  sparkle: [
+    '    ·    ',
+    '  · ★ ·  ',
+    '    ·    ',
+  ].join('\n'),
+
+  snake: [
+    '    ____  ',
+    '   / °  \\ ',
+    '  |      |',
+    '   \\~~~~/ ',
+    '    ~~~~  ',
+  ].join('\n'),
+
+  alien: [
+    '  ╭─────╮ ',
+    '  │ ◎ ◎ │ ',
+    '  │  ▽  │ ',
+    '  ╰──┬──╯ ',
+    '    ╱│╲   ',
+  ].join('\n'),
+
+  mushroom: [
+    '   ╭───╮  ',
+    '  ╱ ● ● ╲ ',
+    ' ╱●     ●╲',
+    ' ╰───┬───╯',
+    '     │    ',
+    '   ╭─┴─╮  ',
+  ].join('\n'),
+};
+---
+
+<pre
+  class:list={[
+    "sprite select-none pointer-events-none font-mono text-[10px] leading-[1.3] text-(--color-accent) whitespace-pre hidden md:block",
+    className,
+  ]}
+  aria-hidden="true"
+  set:text={sprites[type]}
+/>

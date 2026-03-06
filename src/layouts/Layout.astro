@@ -90,5 +90,59 @@ const siteSchema = JSON.stringify({
     <Nav locale={locale} />
     <slot />
     {!hideFooter && <Footer locale={locale} />}
+
+<!-- Konami easter egg -->
+    <div id="konami-msg"><span>You found it. I like you already.</span></div>
+
+    <script>
+      // Cursor sprite — follows mouse with easing, desktop only
+      // Konami code: up up down down left right left right b a
+      function initKonami() {
+        const seq = [38,38,40,40,37,39,37,39,66,65];
+        let idx = 0;
+        const msg = document.getElementById('konami-msg');
+        if (!msg) return;
+
+        document.addEventListener('keydown', (e) => {
+          if (e.keyCode === seq[idx]) {
+            idx++;
+            if (idx === seq.length) {
+              idx = 0;
+              msg.classList.add('show');
+              setTimeout(() => msg.classList.remove('show'), 2500);
+            }
+          } else {
+            idx = 0;
+          }
+        });
+      }
+
+      // Profile photo easter egg — click to glitch
+      function initPhotoGlitch() {
+        const photo = document.querySelector('.hero-photo');
+        if (!photo) return;
+        let clicks = 0;
+
+        photo.addEventListener('click', () => {
+          clicks++;
+          if (clicks >= 3) {
+            photo.animate([
+              { filter: 'hue-rotate(0deg)' },
+              { filter: 'hue-rotate(90deg) saturate(3)' },
+              { filter: 'hue-rotate(180deg) saturate(2)' },
+              { filter: 'hue-rotate(270deg) saturate(3)' },
+              { filter: 'hue-rotate(360deg)' },
+            ], { duration: 600, easing: 'ease-in-out' });
+            clicks = 0;
+          }
+        });
+      }
+
+      // Init on page load and after View Transition navigations
+      document.addEventListener('astro:page-load', () => {
+        initKonami();
+        initPhotoGlitch();
+      });
+    </script>
   </body>
 </html>

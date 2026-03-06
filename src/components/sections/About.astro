@@ -1,5 +1,6 @@
 ---
 import { t } from '../../i18n/utils';
+import Sprite from '../Sprite.astro';
 
 interface Props {
   locale?: string;
@@ -8,7 +9,11 @@ interface Props {
 const { locale = "en" } = Astro.props;
 ---
 
-<section class="py-20 md:py-28" id="about">
+<section class="py-20 md:py-28 relative sprite-wrapper overflow-hidden" id="about">
+  <Sprite type="wizard" class="top-20 right-[22%]" />
+  <Sprite type="cactus" class="bottom-24 left-[12%]" />
+  <Sprite type="penguin" class="top-[55%] right-[32%]" />
+
   <div class="max-w-4xl mx-auto px-6 md:px-8">
     <hr class="rule mb-16" />
 
@@ -24,7 +29,7 @@ const { locale = "en" } = Astro.props;
           alt="Olle walking in the Swiss Alps"
           width="480"
           height="640"
-          class="w-full object-cover"
+          class="about-photo w-full object-cover"
           loading="lazy"
           decoding="async"
         />

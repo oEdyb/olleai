@@ -1,5 +1,6 @@
 {
   "nav.consulting": "Consulting",
+  "nav.community": "Community",
   "nav.links": "Links",
 
   "hero.label": "PhD dropout. AI builder. @olleai.",
@@ -14,9 +15,10 @@
   "socialproof.gh.stat": "Open source",
 
   "community.label": "Community",
-  "community.headline": "Learn context engineering with other builders.",
-  "community.description": "Free Skool community where we share what works, what doesn't, and how to actually ship with AI. No fluff.",
+  "community.headline": "Skills you can use today. Not theory.",
+  "community.description": "Free community with ready-to-use skills, step-by-step crash courses, and people actually shipping with AI. If I build something that works, it goes here first.",
   "community.cta": "Join for free",
+  "community.powered": "Powered by",
 
   "testimonials.label": "Working with",
   "testimonials.matyas.role": "Founder",
@@ -34,7 +36,7 @@
 
   "consulting.label": "Consulting",
   "consulting.headline": "Let's talk before we build.",
-  "consulting.subheadline": "I want to understand your stack and your team before I recommend anything. Claude Code, agents, context engineering — but only what fits.",
+  "consulting.subheadline": "I want to understand your stack and your team before I recommend anything. Claude Code, agents, context engineering \u2014 but only what fits.",
   "consulting.strategy.duration": "1 hour",
   "consulting.strategy.title": "Strategy Session",
   "consulting.strategy.price": "\u20ac500",
