@@ -18,14 +18,18 @@ const copyright = t('footer.copyright', locale).replace('{year}', String(year));
   <div class="max-w-4xl mx-auto px-6 md:px-8 py-16 md:py-20">
     <hr class="rule mb-12" />
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <p class="font-mono text-sm text-(--color-muted)">
-        <Fragment set:html={copyright} />
-      </p>
+      <div class="flex flex-col gap-1.5">
+        <p class="font-mono text-sm text-(--color-muted)">
+          <Fragment set:html={copyright} />
+        </p>
+        <p class="font-mono text-xs text-(--color-muted)/60">
+          Built with <a href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener noreferrer" class="text-(--color-muted) hover:text-(--color-accent) transition-colors">Claude Code</a>
+        </p>
+      </div>
       <div class="flex items-center gap-5">
         <a href="https://youtube.com/@olleai" target="_blank" rel="noopener noreferrer" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">YT</a>
         <a href="https://tiktok.com/@olleai" target="_blank" rel="noopener noreferrer" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">TT</a>
         <a href="https://x.com/olledyberg" target="_blank" rel="noopener noreferrer" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">X</a>
-        <a href="https://github.com/oEdyb" target="_blank" rel="noopener noreferrer" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">GH</a>
         <a href="https://www.linkedin.com/in/olledyberg/" target="_blank" rel="noopener noreferrer" class="text-sm text-(--color-muted) hover:text-(--color-text-secondary) transition-colors">LI</a>
       </div>
     </div>
