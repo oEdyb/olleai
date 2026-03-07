@@ -260,6 +260,18 @@ body {
   opacity: 0.3;
 }
 
+/* ─── Resource cards ─── */
+
+.resource-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.resource-card:hover {
+  transform: translateY(-2px);
+  background-color: var(--color-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
 /* ─── Skool logo ─── */
 
 .skool-logo {

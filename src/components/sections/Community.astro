@@ -7,6 +7,33 @@ interface Props {
 }
 
 const { locale = "en" } = Astro.props;
+
+const resources = [
+  {
+    path: "~/skills/",
+    title: t("community.res.skills", locale),
+    desc: t("community.res.skills.desc", locale),
+    icon: ">" ,
+  },
+  {
+    path: "~/workflows/",
+    title: t("community.res.workflows", locale),
+    desc: t("community.res.workflows.desc", locale),
+    icon: "$",
+  },
+  {
+    path: "~/courses/",
+    title: t("community.res.courses", locale),
+    desc: t("community.res.courses.desc", locale),
+    icon: "#",
+  },
+  {
+    path: "~/templates/",
+    title: t("community.res.templates", locale),
+    desc: t("community.res.templates.desc", locale),
+    icon: "@",
+  },
+];
 ---
 
 <section class="py-16 md:py-24 bg-(--color-surface) relative sprite-wrapper overflow-hidden">
@@ -29,12 +56,34 @@ const { locale = "en" } = Astro.props;
 
     <div class="text-center">
       <p class="font-mono text-(--color-accent) text-xs tracking-widest uppercase mb-6">{t("community.label", locale)}</p>
-      <h2 class="font-display text-3xl md:text-5xl leading-tight tracking-tight mb-6 mx-auto max-w-2xl">
+      <h2 class="font-display text-3xl md:text-5xl leading-tight tracking-tight mb-4 mx-auto max-w-2xl">
         {t("community.headline", locale)}
       </h2>
-      <p class="text-(--color-text-secondary) text-lg leading-relaxed mb-10 mx-auto max-w-lg">
+      <p class="text-(--color-text-secondary) text-lg leading-relaxed mb-12 mx-auto max-w-lg">
         {t("community.description", locale)}
       </p>
+
+      <!-- Resource grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12">
+        {resources.map((res) => (
+          <a
+            href="https://www.skool.com/ctx/about"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="resource-card group text-left p-4 rounded-lg border border-(--color-border) hover:border-(--color-accent)/40 bg-(--color-bg)/60 transition-all"
+          >
+            <div class="font-mono text-[11px] text-(--color-muted) tracking-wide mb-3 truncate group-hover:text-(--color-accent)/60 transition-colors">
+              <span class="text-(--color-accent)/50">{res.icon}</span> {res.path}
+            </div>
+            <p class="text-sm font-medium text-(--color-text) group-hover:text-(--color-accent) transition-colors mb-1">
+              {res.title}
+            </p>
+            <p class="font-mono text-[11px] text-(--color-muted) leading-snug">
+              {res.desc}
+            </p>
+          </a>
+        ))}
+      </div>
 
       <a
         href="https://www.skool.com/ctx/about"
