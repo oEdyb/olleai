@@ -17,9 +17,12 @@ const { locale = "en" } = Astro.props;
     <hr class="rule mb-16" />
 
     <div class="max-w-xl">
-      <h2 class="font-display text-4xl md:text-5xl leading-[1.1] tracking-tight mb-10">
+      <h2 class="font-display text-4xl md:text-5xl leading-[1.1] tracking-tight mb-6">
         {t("cta.headline", locale)}
       </h2>
+      <p class="text-(--color-text-secondary) text-base md:text-lg leading-relaxed mb-10">
+        {t("cta.description", locale)}
+      </p>
       <a
         href={`mailto:${t("cta.email", locale)}`}
         class="inline-flex items-center gap-3 px-8 py-4 text-base font-medium border border-(--color-accent) text-(--color-accent) hover:bg-(--color-accent) hover:text-(--color-bg) rounded-lg transition-colors group"

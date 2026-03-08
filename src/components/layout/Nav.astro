@@ -22,17 +22,6 @@ const prefix = locale === 'sv' ? '/sv' : '';
 
       <div class="flex items-center gap-3 md:gap-6">
         <a
-          href={`${prefix}/consulting`}
-          class:list={[
-            "font-mono text-xs uppercase tracking-[0.15em] transition-colors py-2",
-            currentPath.startsWith(`${prefix}/consulting`)
-              ? "text-(--color-text)"
-              : "text-(--color-muted) hover:text-(--color-text-secondary)",
-          ]}
-        >
-          {t('nav.consulting', locale)}
-        </a>
-        <a
           href="https://www.skool.com/ctx/about"
           target="_blank"
           rel="noopener noreferrer"
