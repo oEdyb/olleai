@@ -1,5 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { t, getLocale } from '../i18n/utils';
+
+const locale = getLocale(Astro);
 
 const social = [
   { label: "YouTube", tag: "YT", href: "https://youtube.com/@olleai", note: "Tutorials and deep dives" },
