@@ -38,10 +38,10 @@ Deploys automatically on push to `master` via Cloudflare Pages.
 ## Homepage Flow
 
 ```
-Hero → SocialProof → Community (Skool) → Testimonials → About → CTA
+Hero → SocialProof → Community (Skool) → About → CTA
 ```
 
-This order is deliberate: Competence → Credibility → Community → Validation → Connection → Action. Do NOT rearrange without good reason.
+This order is deliberate: Competence → Credibility → Community → Connection → Action. Do NOT rearrange without good reason.
 
 ## i18n
 
@@ -86,4 +86,4 @@ All in `@theme {}` inside `global.css`. Never hardcode colors — use `var(--col
 - `f838112` — Pre-soul checkpoint (clean minimal site)
 - `48095ca` — Post-design-audit (stripped to essentials)
 
-Last updated: 2026-03-07
+Last updated: 2026-04-13

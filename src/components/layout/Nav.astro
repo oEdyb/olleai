@@ -33,6 +33,17 @@ const prefix = locale === 'sv' ? '/sv' : '';
           </span>
         </a>
         <a
+          href={`${prefix}/blog`}
+          class:list={[
+            "font-mono text-xs uppercase tracking-[0.15em] transition-colors py-2",
+            currentPath.startsWith(`${prefix}/blog`)
+              ? "text-(--color-text)"
+              : "text-(--color-muted) hover:text-(--color-text-secondary)",
+          ]}
+        >
+          {t('nav.blog', locale)}
+        </a>
+        <a
           href={`${prefix}/links`}
           class:list={[
             "font-mono text-xs uppercase tracking-[0.15em] transition-colors py-2",
