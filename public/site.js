@@ -450,12 +450,13 @@ const sprites = $$("canvas.sprite").map(sprite);
 /* hero: a clean cutout of the real photo, shown in one of five treatments (?hero=1..5) */
 const heroArt = $(".hero-art"), heroCv = heroArt && $(".hero-cv", heroArt), heroPhoto = heroArt && $(".hero-photo", heroArt);
 const HERO_V = document.documentElement.dataset.hero || "1";
-let heroSrc = null;
+let heroSrc = null, heroImg = null, heroDots = null;
 if (heroPhoto) {
   const shown = () => heroPhoto.classList.add("on");
   if (heroPhoto.complete && heroPhoto.naturalWidth) heroPhoto.decode().then(shown, shown); else heroPhoto.addEventListener("load", () => heroPhoto.decode().then(shown, shown), { once: true });
 }
 const heroSrcReady = HERO_V === "1" ? Promise.resolve(null) : loadImg("img/hero-soft-640.webp").then(img => {
+  heroImg = img;
   if (!img) return null;
   const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
   const g = c.getContext("2d"); g.drawImage(img, 0, 0);
@@ -483,6 +484,18 @@ function buildHeroArt() {
   heroCv.width = Math.round(W * dpr); heroCv.height = Math.round(H * dpr);
   const g = heroCv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
   const D = desk(), S = heroSrc;
+  if (HERO_V === "6" || HERO_V === "7") {
+    const p = HERO_V === "6" ? (D ? 3 : 2.2) : (D ? 4 : 3.2);
+    const cols = Math.ceil(W / p), rows = Math.ceil(H / p);
+    const c = document.createElement("canvas"); c.width = cols; c.height = rows;
+    const cg = c.getContext("2d"); cg.imageSmoothingQuality = "high"; cg.drawImage(heroImg, 0, 0, cols, rows);
+    const d = cg.getImageData(0, 0, cols, rows).data;
+    heroDots = { p, cols, rows, d, W, H, dpr, last: -1, off: 0 };
+    if (HERO_V === "6") { heroDots.img = g.createImageData(cols, rows); heroDots.tmp = c; }
+    heroDraw(performance.now() / 1000, true);
+    heroCv.classList.add("on");
+    return;
+  }
   if (HERO_V === "5") {
     const p = D ? 6 : 4.5, cols = Math.ceil(W / p), rows = Math.ceil(H / p), span = Math.max(1, Math.round(p / W * S.w));
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
@@ -517,6 +530,50 @@ function buildHeroArt() {
   }
   heroCv.classList.add("on");
 }
+
+/* variants 6 and 7: full-body dither portraits, alive with a slow shimmer and a ripple under the cursor */
+function heroDraw(t, force) {
+  const Q = heroDots; if (!Q || !heroCv) return;
+  const r = heroCv.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > innerHeight) return;
+  const mx = P.x - r.left, my = P.y - r.top, near = !reduce && mx > -80 && my > -80 && mx < r.width + 80 && my < r.height + 80;
+  const step = reduce ? 0 : Math.floor(t * (HERO_V === "6" ? 5 : 2));
+  if (!force && step === Q.last && !near && !Q.hot) return;
+  if (!force && near && t - (Q.tl || 0) < 1 / 30) return;
+  Q.last = step; Q.tl = t; Q.hot = near;
+  const { p, cols, rows, d } = Q, g = heroCv.getContext("2d"), R2 = 120 * 120;
+  const ripple = (x, y) => { if (!near) return 0; const dx = (x + 0.5) * p - mx, dy = (y + 0.5) * p - my, dd = dx * dx + dy * dy; if (dd > R2 * 4) return 0; return (HERO_V === "7" ? 0.1 : 0.2) * Math.sin(Math.sqrt(dd) / 11 - t * 4) * Math.exp(-dd / R2); };
+  if (HERO_V === "6") {
+    const o = Q.img.data, sx = step * 7 & 63, sy = step * 13 & 63;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const i = (y * cols + x) * 4, a = d[i + 3] / 255;
+      const bn = BN ? BN[((y + sy) & 63) * 64 + ((x + sx) & 63)] : 0.5, rp = ripple(x, y);
+      if (a < 0.02 || a < bn * 0.9 + rp * 0.5) { o[i + 3] = 0; continue; }
+      const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+      const b2 = BN ? BN[((y + sy + 31) & 63) * 64 + ((x + sx + 23) & 63)] : 0.5;
+      const on = Math.pow(lum, 0.6) * 1.18 + rp > b2;
+      const k = on ? 1 : 0.32, lf = c => 255 * Math.pow(d[i + c] / 255, on ? 0.72 : 1) * k;
+      o[i] = lf(0); o[i + 1] = lf(1); o[i + 2] = lf(2);
+      o[i + 3] = 255;
+    }
+    Q.tmp.getContext("2d").putImageData(Q.img, 0, 0);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, heroCv.width, heroCv.height);
+    g.imageSmoothingEnabled = false; g.drawImage(Q.tmp, 0, 0, heroCv.width, heroCv.height);
+  } else {
+    g.setTransform(Q.dpr, 0, 0, Q.dpr, 0, 0); g.clearRect(0, 0, Q.W, Q.H);
+    const lo = [96, 52, 36], hi = [243, 239, 231], br = reduce ? 0 : 0.04 * Math.sin(t * 0.9);
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const i = (y * cols + x) * 4, a = d[i + 3] / 255; if (a < 0.03) continue;
+      const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, k = Math.pow(lum, 0.9);
+      const s = p * Math.min(1.12, (0.18 + 0.95 * Math.sqrt(lum) + br + ripple(x, y)) * Math.sqrt(a));
+      if (s < 0.5) continue;
+      const cx = (x + 0.5) * p + (y & 1 ? p / 2 : 0), cy = (y + 0.5) * p;
+      g.fillStyle = `rgb(${mix(lo[0], hi[0], k) | 0},${mix(lo[1], hi[1], k) | 0},${mix(lo[2], hi[2], k) | 0})`;
+      g.beginPath(); g.arc(cx, cy, s / 2, 0, 6.2832); g.fill();
+    }
+  }
+}
+
 /* variant 4: the photo resolves into ASCII under the cursor and as you scroll away */
 if (heroArt && HERO_V === "4") {
   const setLens = (x, y, r) => { heroArt.style.setProperty("--mx", x + "px"); heroArt.style.setProperty("--my", y + "px"); heroArt.style.setProperty("--lr", r + "px"); };
@@ -941,6 +998,7 @@ function loop(now) {
   }
   railFrame();
   beamFrame(t);
+  if (heroDots && !scrolling) heroDraw(t);
   for (const g of grids) if (g.vis || reduce) g.draw(now);
   for (const l of leds) l.draw(t);
   for (const s of sprites) s.draw(t);
