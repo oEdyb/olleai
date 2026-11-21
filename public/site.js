@@ -1140,39 +1140,123 @@ function beamFrame(t) {
   G.upload();
 }
 
-/* photos dissolve into halftone squircle dots at their top and bottom edges */
-function dotMask(img) {
-  const r = img.getBoundingClientRect(), W = Math.round(r.width), H = Math.round(r.height);
-  if (!W || !H) return;
-  const p = CELL() * 2, c = document.createElement("canvas"); c.width = W; c.height = H;
-  const g = c.getContext("2d"); g.fillStyle = "#fff";
-  const T = Math.min(H * 0.22, p * 15), Bz = Math.min(H * 0.36, p * 26), side = img.closest(".turn") || img.matches(".me-portrait") ? Math.min(W * 0.16, p * 9) : 0;
-  const small = img.matches(".me-portrait"), blob = img.matches(".turn img"); const [fx, fy] = (img.dataset.focus || "0.5 0.5").split(" ").map(Number); const core = +(img.dataset.core || 0.58); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
-  const cols = Math.ceil(W / p), rows = Math.ceil(H / p);
-  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-    const cy = (y + 0.5) * p, n = fbm(x * 0.11 + 3, y * 0.11);
-    const cx = (x + 0.5) * p, n2 = fbm(x * 0.13 + 9, y * 0.13 + 4);
-    let v = Math.min(smooth(0, Tt, cy - p + (n - 0.5) * Tt * 0.9), smooth(0, Bb, H - cy - p + (n - 0.5) * Bb * 0.9));
-    if (side) v = Math.min(v, smooth(0, side, cx - p + (n2 - 0.5) * side * 0.9), smooth(0, side, W - cx - p + (n2 - 0.5) * side * 0.9));
-    if (blob) {
-      const dx = cx - fx * W, dy = cy - fy * H;
-      const nx = dx < 0 ? dx / (fx * W) : dx / ((1 - fx) * W), ny = (dy < 0 ? dy / (fy * H) : dy / ((1 - fy) * H)) * (dy < 0 ? 0.8 : 1);
-      v = 1 - smooth(core, 1.0, Math.hypot(nx, ny) + (n - 0.5) * 0.3);
-      v *= smooth(0, p * 2.5, Math.min(cx, W - cx, cy, H - cy) - p * 0.5);
-    }
-    if (v <= 0.02) continue;
-    if (v >= 0.97) { g.fillRect(x * p, y * p, p + 0.5, p + 0.5); continue; }
-    const s = p * Math.min(1, Math.sqrt(v) * 1.08);
-    g.beginPath();
-    if (g.roundRect) g.roundRect(x * p + (p - s) / 2, y * p + (p - s) / 2, s, s, s * 0.34); else g.rect(x * p + (p - s) / 2, y * p + (p - s) / 2, s, s);
-    g.fill();
+/* photos dissolve into round halftone dots. A smooth presence field (edge distance bent by low-frequency
+   noise, opened up around the subject) sets each dot's ink coverage; dots are drawn per device pixel with
+   anti-aliasing into an alpha mask, so the photo itself shows through them */
+const DOT = Object.assign({ grid: "rot", p: [7, 5], wob: 0.7, feat: 0.38, gam: 1 }, window.__dot || {});
+const DOT_LAT = {
+  rot: [Math.SQRT1_2, Math.SQRT1_2, -Math.SQRT1_2, Math.SQRT1_2],
+  sq: [1, 0, 0, 1],
+  hex: [1, 0, 0.5, Math.sqrt(3) / 2],
+  hex15: [Math.cos(0.2618), Math.sin(0.2618), Math.cos(1.309), Math.sin(1.309)],
+};
+/* radius (in pitch units) whose dots cover a given fraction of the plane, measured once per lattice */
+function dotRadii(B) {
+  const n = 48, d = [];
+  for (let t = 0; t < n; t++) for (let s = 0; s < n; s++) {
+    const a = (s + 0.5) / n, b = (t + 0.5) / n, x = a * B[0] + b * B[2], y = a * B[1] + b * B[3];
+    let m = 9; for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) m = Math.min(m, Math.hypot(x - i * B[0] - j * B[2], y - i * B[1] - j * B[3]));
+    d.push(m);
   }
-  const url = c.toDataURL("image/png");
+  d.sort((p, q) => p - q);
+  const R = new Float32Array(257);
+  for (let k = 1; k <= 256; k++) R[k] = d[Math.min(d.length - 1, Math.round(k / 256 * d.length) - 1)];
+  R[256] += 0.03;
+  return R;
+}
+const dotRadiiCache = {};
+/* where the subject sits inside the element, from image-space focus through object-fit: cover */
+function dotFocus(img, W, H) {
+  const f = (img.dataset.focus || "0.5 0.5").split(" ").map(Number), iw = img.naturalWidth || W, ih = img.naturalHeight || H;
+  const st = getComputedStyle(img), s = st.objectFit === "cover" ? Math.max(W / iw, H / ih) : Math.min(W / iw, H / ih);
+  const op = st.objectPosition.split(" ").map(v => parseFloat(v) / 100), dw = iw * s, dh = ih * s;
+  return [(W - dw) * (op[0] || 0.5) + f[0] * dw, (H - dh) * (op[1] ?? 0.5) + f[1] * dh, +(img.dataset.core || 0) * Math.min(W, H)];
+}
+function dotField(img, W, H, p) {
+  const kind = img.matches(".turn img") ? "blob" : img.matches(".press-photo") ? "foot" : "band";
+  const [fx, fy, fr] = dotFocus(img, W, H), L = Math.max(W, H) * DOT.feat, sd = (img.currentSrc || img.src).length * 0.37;
+  const nz = (x, y, k) => fbm(x / L + k * 7.1 + sd, y / L + k * 3.7) - 0.5, edge = (d, w) => smooth(0, w, d);
+  if (kind === "blob") {
+    const core = +(img.dataset.core || 0.5);
+    return (x, y) => {
+      const dx = x - fx, dy = y - fy, nx = dx / (dx < 0 ? fx : W - fx), ny = dy / (dy < 0 ? fy : H - fy) * (dy < 0 ? 0.85 : 1);
+      const q = Math.hypot(nx, ny) + nz(x, y, 1) * DOT.wob * 0.45;
+      return (1 - smooth(core, 1.02, q)) * edge(Math.min(x, W - x, y, H - y), p * 2);
+    };
+  }
+  const T = kind === "foot" ? 0 : Math.min(H * 0.3, 300), Bb = kind === "foot" ? H * 0.34 : Math.min(H * 0.4, 380), S = kind === "foot" ? W * 0.14 : 0;
+  const band = (d, w, k, x, y) => edge(d + nz(x, y, k) * w * DOT.wob, w) * edge(d, p * 1.5);
+  return (x, y) => {
+    let v = Bb ? band(H - y, Bb, 2, x, y) : 1;
+    if (T) v = Math.min(v, band(y, T, 3, x, y));
+    if (S) v = Math.min(v, band(x, S, 4, x, y), band(W - x, S, 5, x, y));
+    if (fr) { const g = 1 - smooth(fr, fr * 1.9, Math.hypot(x - fx, (y - fy) * 1.15)); v = Math.max(v, g * edge(Math.min(y, H - y), p * 3)); }
+    return v;
+  };
+}
+async function buildDots(img) {
+  const r = img.getBoundingClientRect(), W = r.width, H = r.height;
+  if (W < 4 || H < 4) return;
+  const t0 = performance.now(), k = Math.min(devicePixelRatio || 1, 3), Wd = Math.round(W * k), Hd = Math.round(H * k);
+  const p = DOT.p[desk() ? 0 : 1], B = DOT_LAT[DOT.grid] || DOT_LAT.rot, R = dotRadiiCache[DOT.grid] || (dotRadiiCache[DOT.grid] = dotRadii(B));
+  const e1x = B[0] * p, e1y = B[1] * p, e2x = B[2] * p, e2y = B[3] * p, det = e1x * e2y - e2x * e1y;
+  const ia = e2y / det, ib = -e2x / det, ic = -e1y / det, id = e1x / det, field = dotField(img, W, H, p);
+  const corners = [[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => [ia * x + ib * y, ic * x + id * y]);
+  const i0 = Math.floor(Math.min(...corners.map(c => c[0]))) - 1, j0 = Math.floor(Math.min(...corners.map(c => c[1]))) - 1;
+  const ni = Math.ceil(Math.max(...corners.map(c => c[0]))) - i0 + 2, nj = Math.ceil(Math.max(...corners.map(c => c[1]))) - j0 + 2;
+  const CX = new Float32Array(ni * nj), CY = new Float32Array(ni * nj), RR = new Float32Array(ni * nj), full = R[256] * p;
+  for (let j = 0; j < nj; j++) for (let i = 0; i < ni; i++) {
+    const q = j * ni + i, x = (i + i0) * e1x + (j + j0) * e2x, y = (i + i0) * e1y + (j + j0) * e2y;
+    CX[q] = x; CY[q] = y;
+    if (x < -p || y < -p || x > W + p || y > H + p) continue;
+    const v = Math.pow(clamp(field(clamp(x, 0, W), clamp(y, 0, H)), 0, 1), DOT.gam);
+    RR[q] = v >= 0.999 ? full : R[Math.round(v * 256)] * p;
+  }
+  const c = document.createElement("canvas"); c.width = Wd; c.height = Hd;
+  const g = c.getContext("2d"), im = g.createImageData(Wd, Hd), o = new Uint32Array(im.data.buffer);
+  for (let Y = 0; Y < Hd; Y++) {
+    const y = (Y + 0.5) / k;
+    for (let X = 0; X < Wd; X++) {
+      const x = (X + 0.5) / k, a = ia * x + ib * y - i0, b = ic * x + id * y - j0, i = a | 0, j = b | 0, q = j * ni + i;
+      const r00 = RR[q], r10 = RR[q + 1], r01 = RR[q + ni], r11 = RR[q + ni + 1];
+      if (r00 >= full && r10 >= full && r01 >= full && r11 >= full) { o[Y * Wd + X] = 0xff000000; continue; }
+      if (!(r00 || r10 || r01 || r11)) continue;
+      let m = 0;
+      for (const qq of [q, q + 1, q + ni, q + ni + 1]) {
+        const rr = RR[qq]; if (!rr) continue;
+        const dx = x - CX[qq], dy = y - CY[qq], s = (rr - Math.sqrt(dx * dx + dy * dy)) * k + 0.5;
+        if (s > m) { m = s; if (m >= 1) break; }
+      }
+      if (m > 0) o[Y * Wd + X] = ((m >= 1 ? 255 : m * 255) << 24) >>> 0;
+    }
+  }
+  g.putImageData(im, 0, 0);
+  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  if (!blob) return;
+  const url = URL.createObjectURL(blob), old = dotURLs.get(img);
   img.style.webkitMaskImage = img.style.maskImage = `url(${url})`;
   img.style.webkitMaskSize = img.style.maskSize = "100% 100%";
   img.style.webkitMaskRepeat = img.style.maskRepeat = "no-repeat";
+  dotURLs.set(img, url); if (old) setTimeout(() => URL.revokeObjectURL(old), 1000);
+  img.dataset.dm = Math.round(performance.now() - t0);
   const show = () => img.classList.add("masked");
   if (img.complete && img.naturalWidth) img.decode().then(show, show); else img.addEventListener("load", show, { once: true });
+}
+const dotURLs = new WeakMap(), dotQ = new Set();
+let dotBusy = false;
+const dotIO = "IntersectionObserver" in window ? new IntersectionObserver(es => {
+  for (const e of es) if (e.isIntersecting) { dotIO.unobserve(e.target); dotQ.add(e.target); }
+  dotRun();
+}, { rootMargin: "150% 0px" }) : null;
+function dotRun() {
+  if (dotBusy || !dotQ.size) return;
+  const img = dotQ.values().next().value; dotQ.delete(img); dotBusy = true;
+  const go = () => buildDots(img).catch(() => img.classList.add("masked")).finally(() => { dotBusy = false; setTimeout(dotRun, 0); });
+  if (img.complete && img.naturalWidth) go(); else img.addEventListener("load", go, { once: true });
+}
+function dotMask(img) {
+  dotQ.delete(img);
+  if (dotIO) { dotIO.unobserve(img); dotIO.observe(img); } else { dotQ.add(img); dotRun(); }
 }
 
 /* photos inside the place words pan as you scroll */
@@ -1328,7 +1412,7 @@ function relayout() {
   kts.forEach(k => k.reset());
   fitAll();
   kts.forEach(k => k.measure());
-  $$(".photo img, .turn img").forEach(dotMask);
+  $$(".photo img, .turn img, .press-photo").forEach(dotMask);
   capAlign();
   measureTex();
   buildHeroArt();

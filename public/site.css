@@ -471,8 +471,8 @@ html.ready .led-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:re
 .place .pm .d{white-space:nowrap}
 
 /* ---- go-live fixes ---- */
-html.js .photo img,html.js .turn img{opacity:0;transition:opacity .35s ease}
-html.js .photo img.masked,html.js .turn img.masked{opacity:1}
+html.js .photo img,html.js .turn img,html.js .press-photo{opacity:0;transition:opacity .35s ease}
+html.js .photo img.masked,html.js .turn img.masked,html.js .press-photo.masked{opacity:1}
 .me-hero .l2{margin-top:.42em}
 /* laser: text and scan as one centred unit */
 .beam-in{grid-template-columns:minmax(0,34ch) auto;justify-content:center;gap:32px 72px}
