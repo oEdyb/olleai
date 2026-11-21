@@ -592,7 +592,7 @@ if (heroArt && HERO_V === "4") {
 
 /* variants 8-10: the clean cutout redrawn on the GPU at device pixels.
    8 colour ASCII, glyphs picked by their measured ink; 9 ASCII with edges drawn as / \ | _; 10 Atkinson dither in a palette taken from the photo */
-const heroGpuImg = HERO_GPU ? loadImg(matchMedia("(min-width:900px), (min-resolution:2.5dppx)").matches ? "img/hero-src-1200.webp" : "img/hero-src-720.webp") : null;
+const heroGpuImg = HERO_GPU ? loadImg(matchMedia("(min-width:900px), (min-resolution:2.5dppx)").matches ? "img/hero-src-1200-g6.webp" : "img/hero-src-720-g6.webp") : null;
 const HT = Object.assign({ cell: [5, 3], weight: 560, lh: 1.0, glow: [0.4, 0.9], flick: 0.05, dpx: [2, 1.34], tone: [1.4, 0.8, 0.3, 5, 1.0], tone10: [0.5, 1.6, 0.3, 5, 0.85], cg: 0.9, ig: 0.7, ink0: 0.1,
   ramp8: " .:-=+*cs#%@", pool8: " .,:;-~=+*cosxzaeuv#%@", ramp9: " .:-=+*#", w9: [0.8, 1.1], pool9: " .,:;-~=+*cos#%@", edgeInk: [0.98, 0.93, 0.85], fade: [0.66, 0.97, 0.78, 1.04], spot: [0.45, 0.3, 0.62], sat: 1.12,
   edge: [0.4, 2.0, 0.02, 0.07, 0.3, 0.45], hyst: 0.35, glow9: 0.25, dk: 5, dx: ["#73849a", "#b3a49a", "#efe6da"], dsat: 0.95 }, window.__heroTune || {});
