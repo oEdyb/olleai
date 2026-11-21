@@ -543,7 +543,7 @@ html.js .photo img.masked,html.js .turn img.masked{opacity:1}
 .hero-photo,.hero-cv{opacity:0;transition:opacity .45s ease}
 .hero-photo.on,.hero-cv.on{opacity:1}
 html:not(.js) .hero-photo{opacity:1}
-[data-hero="2"] .hero-photo,[data-hero="5"] .hero-photo,[data-hero="6"] .hero-photo,[data-hero="7"] .hero-photo{display:none}
+[data-hero="2"] .hero-photo,[data-hero="5"] .hero-photo,[data-hero="6"] .hero-photo,[data-hero="7"] .hero-photo,[data-hero="8"] .hero-photo,[data-hero="9"] .hero-photo,[data-hero="10"] .hero-photo{display:none}
 [data-hero="1"] .hero-cv{display:none}
 [data-hero="3"] .hero-photo{-webkit-mask:radial-gradient(ellipse 30% 33% at 52% 41%,#000 58%,transparent 100%);mask:radial-gradient(ellipse 30% 33% at 52% 41%,#000 58%,transparent 100%)}
 [data-hero="4"] .hero-photo{--r:calc(var(--lr,0px) + var(--sp,0) * 900px);-webkit-mask:radial-gradient(circle at var(--mx,-999px) var(--my,-999px),transparent var(--r),#000 calc(var(--r) + 70px));mask:radial-gradient(circle at var(--mx,-999px) var(--my,-999px),transparent var(--r),#000 calc(var(--r) + 70px))}

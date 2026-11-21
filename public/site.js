@@ -447,15 +447,16 @@ const grids = [];
 const leds = $$("canvas[data-led]").map(ledWord);
 const sprites = $$("canvas.sprite").map(sprite);
 
-/* hero: a clean cutout of the real photo, shown in one of five treatments (?hero=1..5) */
+/* hero: a clean cutout of the real photo, shown in one of ten treatments (?hero=1..10) */
 const heroArt = $(".hero-art"), heroCv = heroArt && $(".hero-cv", heroArt), heroPhoto = heroArt && $(".hero-photo", heroArt);
 const HERO_V = document.documentElement.dataset.hero || "1";
+const HERO_GPU = /^(8|9|10)$/.test(HERO_V);
 let heroSrc = null, heroImg = null, heroDots = null;
 if (heroPhoto) {
   const shown = () => heroPhoto.classList.add("on");
   if (heroPhoto.complete && heroPhoto.naturalWidth) heroPhoto.decode().then(shown, shown); else heroPhoto.addEventListener("load", () => heroPhoto.decode().then(shown, shown), { once: true });
 }
-const heroSrcReady = HERO_V === "1" ? Promise.resolve(null) : loadImg("img/hero-soft-640-g2.webp").then(img => {
+const heroSrcReady = HERO_V === "1" || HERO_GPU ? Promise.resolve(null) : loadImg("img/hero-soft-640.webp").then(img => {
   heroImg = img;
   if (!img) return null;
   const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
@@ -479,6 +480,7 @@ function heroHalo(u, v) { const S = heroSrc, x = Math.min(159, Math.max(0, u * 1
 const faceW = (u, v) => 1 - smooth(0.55, 1.0, Math.hypot((u - 0.52) / 0.27, (v - 0.40) / 0.30));
 function buildHeroArt() {
   if (!heroArt || !heroCv || HERO_V === "1") return;
+  if (HERO_GPU) { buildHeroGpu(); return; }
   if (!heroSrc) { heroSrcReady.then(s => s && buildHeroArt()); return; }
   const r = heroArt.getBoundingClientRect(), W = r.width, H = r.height, dpr = Math.min(devicePixelRatio || 1, 2);
   heroCv.width = Math.round(W * dpr); heroCv.height = Math.round(H * dpr);
@@ -586,6 +588,339 @@ if (heroArt && HERO_V === "4") {
   }, { passive: true });
   const sc = () => { const h = $(".hero").getBoundingClientRect(); heroArt.style.setProperty("--sp", clamp(-h.top / (h.height * 0.6), 0, 1).toFixed(3)); };
   addEventListener("scroll", sc, { passive: true }); sc();
+}
+
+/* variants 8-10: the clean cutout redrawn on the GPU at device pixels.
+   8 colour ASCII, glyphs picked by their measured ink; 9 ASCII with edges drawn as / \ | _; 10 Atkinson dither in a palette taken from the photo */
+const heroGpuImg = HERO_GPU ? loadImg(matchMedia("(min-width:900px), (min-resolution:2.5dppx)").matches ? "img/hero-src-1200.webp" : "img/hero-src-720.webp") : null;
+const HT = Object.assign({ cell: [5, 3], weight: 560, lh: 1.0, glow: [0.4, 0.9], flick: 0.05, dpx: [2, 1.34], tone: [1.4, 0.8, 0.3, 5, 1.0], tone10: [0.5, 1.6, 0.3, 5, 0.85], cg: 0.9, ig: 0.7, ink0: 0.1,
+  ramp8: " .:-=+*cs#%@", pool8: " .,:;-~=+*cosxzaeuv#%@", ramp9: " .:-=+*#", w9: [0.8, 1.1], pool9: " .,:;-~=+*cos#%@", edgeInk: [0.98, 0.93, 0.85], fade: [0.66, 0.97, 0.78, 1.04], spot: [0.45, 0.3, 0.62], sat: 1.12,
+  edge: [0.4, 2.0, 0.02, 0.07, 0.3, 0.45], hyst: 0.35, glow9: 0.25, dk: 5, dx: ["#73849a", "#b3a49a", "#efe6da"], dsat: 0.95 }, window.__heroTune || {});
+let HG = null;
+const HG_VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+const HG_HEAD = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform vec2 uRes,uOrg,uGrid,uCell;uniform float uT,uLive;uniform vec3 uPtr;
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+vec2 px(){return vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y)-uOrg;}
+float sweep(vec2 uv,float w){float s=uv.x*.4+uv.y-mod(uT*.04,1.)*3.2+.45;return uLive*exp(-s*s*w);}
+float nearP(vec2 q){vec2 d=q-uPtr.xy;return uLive*exp(-dot(d,d)/(uPtr.z*uPtr.z+1.));}
+`;
+const HG_ASCII = HG_HEAD + `uniform sampler2D uInk,uAux,uGlow,uAtlas;uniform float uN,uGlowK,uFlick;
+void main(){
+  vec2 p=px(),c=floor(p/uCell);
+  if(c.x<0.||c.y<0.||c.x>=uGrid.x||c.y>=uGrid.y){gl_FragColor=vec4(0.);return;}
+  vec2 uv=(c+.5)/uGrid;
+  vec4 ink=texture2D(uInk,uv),aux=texture2D(uAux,uv);
+  float near=nearP((c+.5)*uCell),band=sweep(uv,70.);
+  float slot=floor(uT*1.1+aux.a*17.),r=h21(c*.731+slot*1.618);
+  float g=floor(ink.a*255.+.5),pf=uLive*uFlick+near*.3+band*.08;
+  if(r<pf)g=floor(aux.r*255.+.5);else if(r<pf*1.7)g=floor(aux.g*255.+.5);
+  vec2 l=p-c*uCell;
+  float m=texture2D(uAtlas,vec2((g*uCell.x+l.x)/(uN*uCell.x),l.y/uCell.y)).r*aux.b;
+  vec3 col=min(ink.rgb*(1.+.25*near+.12*band),1.);
+  vec3 gw=texture2D(uGlow,p/(uGrid*uCell)).rgb*uGlowK*(1.+.4*near+.15*band);
+  vec3 o=col*m+gw*(1.-m);
+  gl_FragColor=vec4(o,max(m,max(o.r,max(o.g,o.b))));
+}`;
+const HG_DITHER = HG_HEAD + `uniform sampler2D uIdx,uPal,uBN;uniform float uK;
+void main(){
+  vec2 p=px(),c=floor(p/uCell);
+  if(c.x<0.||c.y<0.||c.x>=uGrid.x||c.y>=uGrid.y){gl_FragColor=vec4(0.);return;}
+  vec2 uv=(c+.5)/uGrid;
+  float i=floor(texture2D(uIdx,uv).r*255.+.5);
+  if(i<.5){gl_FragColor=vec4(0.);return;}
+  float bn=texture2D(uBN,(c+.5)/64.).r;
+  float lift=sweep(uv,26.)*.35+nearP((c+.5)*uCell)*.6;
+  vec3 c3=texture2D(uPal,vec2((i+.5)/uK,.5)).rgb;
+  if(bn<lift)c3=min(c3*1.18+.03,1.);
+  gl_FragColor=vec4(c3,1.);
+}`;
+
+function heroBox(W, H, ia) { let w = W, h = W / ia; if (h > H) { h = H; w = H * ia; } return { x: (W - w) / 2, y: H - h, w, h }; }
+function heroRaster(img, w, h, x0 = 0, y0 = 0, dw = w, dh = h) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true }); g.imageSmoothingQuality = "high"; g.drawImage(img, x0, y0, dw, dh);
+  const d = g.getImageData(0, 0, w, h).data, n = w * h, R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n), A = new Float32Array(n), Y = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const k = i * 4; R[i] = d[k] / 255; G[i] = d[k + 1] / 255; B[i] = d[k + 2] / 255; A[i] = d[k + 3] / 255;
+    Y[i] = 0.2126 * R[i] + 0.7152 * G[i] + 0.0722 * B[i];
+  }
+  return { w, h, R, G, B, A, Y };
+}
+function boxBlur(src, w, h, r) {
+  const S = new Float64Array((w + 1) * (h + 1)), out = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) { let row = 0; for (let x = 0; x < w; x++) { row += src[y * w + x]; S[(y + 1) * (w + 1) + x + 1] = S[y * (w + 1) + x + 1] + row; } }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1), y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1);
+    out[y * w + x] = (S[y1 * (w + 1) + x1] - S[y0 * (w + 1) + x1] - S[y1 * (w + 1) + x0] + S[y0 * (w + 1) + x0]) / ((x1 - x0) * (y1 - y0));
+  }
+  return out;
+}
+const gauss = (src, w, h, r) => boxBlur(boxBlur(boxBlur(src, w, h, r), w, h, r), w, h, r);
+/* tone: local contrast so eyes, brows and the smile read, then levels over the cutout only */
+function heroTone(Rs, cell, c1, r1, c2, r2, gam) {
+  const { w, h, A, Y } = Rs, n = w * h, ya = new Float32Array(n);
+  for (let i = 0; i < n; i++) ya[i] = Y[i] * A[i];
+  const loc = r => { const by = gauss(ya, w, h, Math.max(1, Math.round(cell * r))), ba = gauss(A, w, h, Math.max(1, Math.round(cell * r))); for (let i = 0; i < n; i++) by[i] /= Math.max(ba[i], 1e-3); return by; };
+  const l1 = loc(r1), l2 = c2 ? loc(r2) : l1, T = new Float32Array(n), vals = [];
+  for (let i = 0; i < n; i++) { T[i] = Y[i] + c1 * (Y[i] - l1[i]) + c2 * (Y[i] - l2[i]); if (A[i] > 0.9 && (i & 3) === 0) vals.push(T[i]); }
+  vals.sort((a, b) => a - b);
+  const lo = vals[Math.floor(vals.length * 0.015)] || 0, hi = vals[Math.floor(vals.length * 0.985)] || 1;
+  for (let i = 0; i < n; i++) T[i] = Math.pow(clamp((T[i] - lo) / (hi - lo), 0, 1), gam);
+  return T;
+}
+const heroSpot = (u, v) => 1 - HT.spot[0] * smooth(HT.spot[1], HT.spot[2], Math.hypot((u - 0.53) / 0.85, v - 0.4));
+const heroFade = (u, v) => Math.min(1 - smooth(HT.fade[0], HT.fade[1], v), 1 - smooth(HT.fade[2], HT.fade[3], Math.hypot((u - 0.5) / 0.58, (v - 0.4) / 0.62)));
+
+/* glyphs from the site's own mono font, measured, never a hand-written ramp */
+const HG_CHARS = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i));
+function glyphSheet(cw, ch, fs, weight) {
+  const c = document.createElement("canvas"); c.width = cw * HG_CHARS.length; c.height = ch;
+  const g = c.getContext("2d", { willReadFrequently: true }); g.font = `${weight} ${fs}px "Geist Mono"`;
+  const m = g.measureText("Mdg|"), top = m.actualBoundingBoxAscent, bot = m.actualBoundingBoxDescent;
+  g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "alphabetic";
+  const base = Math.round((ch - (top + bot)) / 2 + top);
+  HG_CHARS.forEach((s, i) => g.fillText(s, i * cw + cw / 2, base));
+  return c;
+}
+function glyphCoverage(ratio, weight) {
+  const mw = 30, mh = Math.round(mw * ratio), c = glyphSheet(mw, mh, mw / HG.adv, weight), d = c.getContext("2d").getImageData(0, 0, c.width, mh).data, cov = new Float32Array(HG_CHARS.length);
+  for (let i = 0; i < d.length; i += 4) cov[Math.floor((i / 4 % c.width) / mw)] += d[i + 3] / 255;
+  for (let k = 0; k < cov.length; k++) cov[k] /= mw * mh;
+  return cov;
+}
+const gi = s => [...s].map(c => c.charCodeAt(0) - 32);
+/* per tone: the glyph whose measured ink matches it, plus same-ink stand-ins for the shimmer */
+function glyphRamp(cov, ramp, pool) {
+  const R = gi(ramp).sort((a, b) => cov[a] - cov[b]), P = gi(pool), mx = cov[R[R.length - 1]];
+  const alts = R.map(i => { if (!i) return [0, 0]; const near = P.filter(j => j !== i && j && Math.abs(cov[j] - cov[i]) < cov[i] * 0.16).sort((a, b) => Math.abs(cov[a] - cov[i]) - Math.abs(cov[b] - cov[i])); return [near[0] ?? i, near[1] ?? near[0] ?? i]; });
+  return { R, alts, pick(t, out) { const x = t * mx; let k = 0, bd = 9; R.forEach((i, j) => { const d = Math.abs(cov[i] - x); if (d < bd) { bd = d; k = j; } }); out[0] = R[k]; out[1] = alts[k][0]; out[2] = alts[k][1]; } };
+}
+function inkFor(c, t, sat) {
+  const Y = Math.max(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], 0.04), b = mix(HT.ink0, 1, Math.pow(t, HT.ig));
+  const o = c.map(v => clamp(Y + (v - Y) * sat, 0, 1)), m = Math.max(...o, 1e-3), k = Math.min(b / Y, 1 / m), w = clamp((b - Y * k) / Math.max(1 - Y * k, 1e-3), 0, 1);
+  return o.map(v => mix(v * k, 1, w));
+}
+const WARM = [[0.3, 0.09, 0.05], [0.7, 0.24, 0.1], [0.95, 0.5, 0.25], [1, 0.78, 0.56], [0.97, 0.94, 0.89]];
+const warm = t => { t = clamp(t, 0, 1) * (WARM.length - 1); const i = Math.min(WARM.length - 2, Math.floor(t)), f = t - i; return [0, 1, 2].map(k => mix(WARM[i][k], WARM[i + 1][k], f)); };
+
+const heroCellPx = dpr => Math.max(5, Math.round(HT.cell[desk() ? 0 : 1] * (dpr < 1.5 ? 1.2 : 1) * dpr));
+function heroAscii(img, box, dpr, edges) {
+  const cw = heroCellPx(dpr), fs = cw / HG.adv, ch = Math.round(fs * HT.lh);
+  const bw = box.w * dpr, bh = box.h * dpr, cols = Math.floor(bw / cw), rows = Math.floor(bh / ch);
+  const org = [Math.round(box.x * dpr + (bw - cols * cw) / 2), Math.round(box.y * dpr + bh - rows * ch)];
+  const gw = 6, gh = Math.max(6, Math.round(gw * ch / cw)), sx = gw / cw, sy = gh / ch;
+  const Rs = heroRaster(img, cols * gw, rows * gh, (box.x * dpr - org[0]) * sx, (box.y * dpr - org[1]) * sy, bw * sx, bh * sy);
+  const T = heroTone(Rs, cols * gw / 132, ...HT.tone), { w, A, R, G, B } = Rs, nc = cols * rows, col = new Float32Array(nc * 5);
+  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    let r = 0, g = 0, b = 0, a = 0, t = 0;
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) { const i = (cy * gh + y) * w + cx * gw + x, al = A[i]; r += R[i] * al; g += G[i] * al; b += B[i] * al; a += al; t += T[i] * al; }
+    const o = (cy * cols + cx) * 5; col[o] = a ? r / a : 0; col[o + 1] = a ? g / a : 0; col[o + 2] = a ? b / a : 0; col[o + 3] = a / (gw * gh); col[o + 4] = t / (gw * gh);
+  }
+  const ramp = glyphRamp(HG.cov, edges ? HT.ramp9 : HT.ramp8, edges ? HT.pool9 : HT.pool8), E = edges ? heroEdges(Rs, T, cols, rows, gw, gh) : null;
+  const ink = new Uint8Array(nc * 4), aux = new Uint8Array(nc * 4), glow = new Uint8Array(nc * 4), top = [0, 0, 0];
+  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    const ci = cy * cols + cx, o = ci * 4, q = ci * 5, a = col[q + 3]; let t = col[q + 4]; const pres = a * heroFade((cx + 0.5) / cols, (cy + 0.5) / rows);
+    const bn = BN ? BN[(cy & 63) * 64 + (cx & 63)] : 0.5, e = E ? E[ci] : -1, on = pres > 0.06 + bn * 0.5 || (e >= 0 && a > 0.1);
+    const sp = heroSpot((cx + 0.5) / cols, (cy + 0.5) / rows), tt = t / Math.max(a, 0.05) * sp;
+    t *= sp;
+    let rgb;
+    if (e >= 0) { top[0] = top[1] = top[2] = e; rgb = HT.edgeInk; }
+    else { ramp.pick(Math.pow(t, HT.cg), top); rgb = edges ? warm(Math.pow(tt, HT.w9[0]) * HT.w9[1]) : inkFor([col[q], col[q + 1], col[q + 2]], tt, HT.sat); }
+    ink[o] = rgb[0] * 255; ink[o + 1] = rgb[1] * 255; ink[o + 2] = rgb[2] * 255; ink[o + 3] = top[0];
+    aux[o] = top[1]; aux[o + 1] = top[2]; aux[o + 2] = on ? 255 * smooth(0.04, 0.45, pres) : 0; aux[o + 3] = hash(cx * 1.7, cy * 3.1) * 255;
+    const gc = edges ? warm(tt * HT.w9[1] * 0.85) : inkFor([col[q], col[q + 1], col[q + 2]], tt, HT.sat), gk = smooth(0.02, 0.9, pres) * Math.pow(tt, 1.3);
+    glow[o] = gc[0] * gk * 255; glow[o + 1] = gc[1] * gk * 255; glow[o + 2] = gc[2] * gk * 255; glow[o + 3] = 255;
+  }
+  return { kind: "ascii", cols, rows, org, cw, ch, fs, ink, aux, glow };
+}
+/* Acerola-style edges: difference of Gaussians finds the lines, a structure tensor per cell finds their direction */
+function heroEdges(Rs, T, cols, rows, gw, gh) {
+  const { w, h, A } = Rs, n = w * h, v = new Float32Array(n), [s1, k, lo, hi, fr0, ch] = HT.edge, fr = fr0 * Math.min(1, cols / 132);
+  for (let i = 0; i < n; i++) v[i] = T[i] * A[i];
+  const ref = w / 132, r1 = Math.max(1, Math.round(ref * s1)), g1 = gauss(v, w, h, r1), g2 = gauss(v, w, h, Math.max(r1 + 1, Math.round(ref * s1 * k))), out = new Int16Array(cols * rows).fill(-1);
+  const gx = new Float32Array(n), gy = new Float32Array(n), line = new Float32Array(n);
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x, q = (dx, dy) => g2[i + dy * w + dx];
+    gx[i] = (q(1, -1) + 2 * q(1, 0) + q(1, 1)) - (q(-1, -1) + 2 * q(-1, 0) + q(-1, 1));
+    gy[i] = (q(-1, 1) + 2 * q(0, 1) + q(1, 1)) - (q(-1, -1) + 2 * q(0, -1) + q(1, -1));
+    line[i] = smooth(lo, hi, g2[i] - g1[i]);
+  }
+  const C = c => HG_CHARS.indexOf(c), score = new Float32Array(cols * rows), dir = new Int16Array(cols * rows);
+  for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    const sp = heroSpot((cx + 0.5) / cols, (cy + 0.5) / rows) * heroFade((cx + 0.5) / cols, (cy + 0.5) / rows);
+    let jxx = 0, jxy = 0, jyy = 0, s = 0, my = 0;
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+      const i = (cy * gh + y) * w + cx * gw + x, l = line[i];
+      if (l <= 0) continue;
+      jxx += gx[i] * gx[i] * l; jxy += gx[i] * gy[i] * l; jyy += gy[i] * gy[i] * l; s += l; my += l * y;
+    }
+    const ci = cy * cols + cx, tr = jxx + jyy, coh = tr > 0 ? Math.sqrt((jxx - jyy) ** 2 + 4 * jxy * jxy) / tr : 0;
+    if (coh < ch || !s) continue;
+    score[ci] = s / (gw * gh) * sp;
+    let phi = 0.5 * Math.atan2(2 * jxy, jxx - jyy) + Math.PI / 2;
+    phi = ((phi % Math.PI) + Math.PI) % Math.PI;
+    const b = Math.round(phi / (Math.PI / 4)) % 4;
+    dir[ci] = b === 0 ? (my / s > gh * 0.6 ? C("_") : C("-")) : b === 1 ? C("\\") : b === 2 ? C("|") : C("/");
+  }
+  for (let i = 0; i < score.length; i++) if (score[i] >= fr) out[i] = dir[i];
+  for (let pass = 0; pass < 2; pass++) for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
+    const ci = cy * cols + cx; if (out[ci] >= 0 || score[ci] < fr * HT.hyst) continue;
+    for (let dy = -1; dy <= 1 && out[ci] < 0; dy++) for (let dx = -1; dx <= 1; dx++) { const x = cx + dx, y = cy + dy; if ((dx || dy) && x >= 0 && y >= 0 && x < cols && y < rows && out[y * cols + x] >= 0) { out[ci] = dir[ci]; break; } }
+  }
+  return out;
+}
+
+const lin = v => Math.pow(v, 2.2), gam = v => Math.pow(clamp(v, 0, 1), 1 / 2.2);
+function kmeans(pts, k, iters) {
+  const n = pts.length / 3, C = [];
+  for (let j = 0; j < k; j++) { const i = Math.floor(((j + 0.5) / k) * n) * 3; C.push([pts[i], pts[i + 1], pts[i + 2]]); }
+  for (let it = 0; it < iters; it++) {
+    const S = C.map(() => [0, 0, 0, 0]);
+    for (let i = 0; i < n; i++) { let b = 0, bd = 9; for (let j = 0; j < k; j++) { const d = (pts[i * 3] - C[j][0]) ** 2 + (pts[i * 3 + 1] - C[j][1]) ** 2 + (pts[i * 3 + 2] - C[j][2]) ** 2; if (d < bd) { bd = d; b = j; } } S[b][0] += pts[i * 3]; S[b][1] += pts[i * 3 + 1]; S[b][2] += pts[i * 3 + 2]; S[b][3]++; }
+    S.forEach((s, j) => { if (s[3]) C[j] = [s[0] / s[3], s[1] / s[3], s[2] / s[3]]; });
+  }
+  return C;
+}
+/* his own colours: k-means over the lit face, plus iris blue and two shirt whites; index 0 is empty */
+function heroDither(img, box, dpr) {
+  const px = Math.max(1, Math.round(HT.dpx[desk() ? 0 : 1] * dpr)), bw = box.w * dpr, bh = box.h * dpr;
+  const cols = Math.floor(bw / px), rows = Math.floor(bh / px), org = [Math.round(box.x * dpr + (bw - cols * px) / 2), Math.round(box.y * dpr + bh - rows * px)];
+  const Rs = heroRaster(img, cols, rows, (box.x * dpr - org[0]) / px, (box.y * dpr - org[1]) / px, bw / px, bh / px);
+  const T = heroTone(Rs, cols / 132, ...HT.tone10), n = cols * rows, V = new Float32Array(n * 3), wt = new Float32Array(n);
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const i = y * cols + x, u = (x + 0.5) / cols, v = (y + 0.5) / rows, w = Rs.A[i] * heroFade(u, v) * heroSpot(u, v), t = T[i] * w, Y = Math.max(Rs.Y[i], 0.02);
+    wt[i] = w;
+    const c = [Rs.R[i], Rs.G[i], Rs.B[i]].map(ch => clamp((Y + (ch - Y) * HT.dsat) * t / Y, 0, 1));
+    V[i * 3] = lin(c[0]); V[i * 3 + 1] = lin(c[1]); V[i * 3 + 2] = lin(c[2]);
+  }
+  const pts = []; for (let i = 0; i < n; i += 7) if (wt[i] > 0.85) pts.push(V[i * 3], V[i * 3 + 1], V[i * 3 + 2]);
+  const pal = [[0, 0, 0]].concat(kmeans(pts, HT.dk, 12).map(c => c.map(v => Math.round(gam(v) * 255))), HT.dx.map(hexRGB));
+  const K = pal.length, P = pal.map(c => c.map(v => lin(v / 255))), idx = new Uint8Array(n);
+  const near = (r, g, b) => { let bi = 0, bd = 9; for (let k = 0; k < K; k++) { const p = P[k], d = (p[0] - r) ** 2 + (p[1] - g) ** 2 * 1.4 + (p[2] - b) ** 2 * 0.6; if (d < bd) { bd = d; bi = k; } } return bi; };
+  const W = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]];
+  for (let y = 0; y < rows; y++) {
+    const rev = y & 1;
+    for (let j = 0; j < cols; j++) {
+      const x = rev ? cols - 1 - j : j, i = y * cols + x;
+      for (let c = 0; c < 3; c++) V[i * 3 + c] = clamp(V[i * 3 + c], -0.08, 1.08);
+      const k = wt[i] < 0.02 ? 0 : near(V[i * 3], V[i * 3 + 1], V[i * 3 + 2]), p = P[k], e = [0, 1, 2].map(c => (V[i * 3 + c] - p[c]) / 8);
+      idx[i] = k;
+      for (const [dx, dy] of W) { const xx = x + (rev ? -dx : dx), yy = y + dy; if (xx >= 0 && xx < cols && yy < rows) { const q = (yy * cols + xx) * 3; V[q] += e[0]; V[q + 1] += e[1]; V[q + 2] += e[2]; } }
+    }
+  }
+  const palT = new Uint8Array(K * 4); pal.forEach((c, k) => { palT.set([c[0], c[1], c[2], k ? 255 : 0], k * 4); });
+  return { kind: "dither", cols, rows, org, cw: px, ch: px, idx, pal: palT, K };
+}
+
+function heroGL(cv) {
+  const gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false });
+  if (!gl) return null;
+  const mk = fs => {
+    const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
+    const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, HG_VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
+    return gl.getProgramParameter(p, gl.LINK_STATUS) ? p : null;
+  };
+  const pr = mk(HERO_V === "10" ? HG_DITHER : HG_ASCII); if (!pr) return null;
+  gl.useProgram(pr);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, "a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = n => gl.getUniformLocation(pr, n);
+  return { gl, pr, U, tex: {} };
+}
+function hgTex(G, unit, name, w, h, data, fmt, linear, wrap) {
+  const gl = G.gl; let t = G.tex[name];
+  if (!t) { t = G.tex[name] = gl.createTexture(); }
+  gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  if (data instanceof HTMLCanvasElement) gl.texImage2D(gl.TEXTURE_2D, 0, fmt, fmt, gl.UNSIGNED_BYTE, data);
+  else gl.texImage2D(gl.TEXTURE_2D, 0, fmt, w, h, 0, fmt, gl.UNSIGNED_BYTE, data);
+  const f = linear ? gl.LINEAR : gl.NEAREST, wr = wrap ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, f], [gl.TEXTURE_MAG_FILTER, f], [gl.TEXTURE_WRAP_S, wr], [gl.TEXTURE_WRAP_T, wr]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  gl.uniform1i(G.U(name), unit);
+}
+async function buildHeroGpu() {
+  const img = await heroGpuImg; if (!img || !heroCv) return;
+  const r = heroArt.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 3), W = r.width, H = r.height;
+  if (W < 10 || H < 10) return;
+  heroCv.width = Math.round(W * dpr); heroCv.height = Math.round(H * dpr);
+  const box = heroBox(W, H, img.width / img.height);
+  if (!HG) {
+    const m = document.createElement("canvas").getContext("2d"); m.font = `${HT.weight} 100px "Geist Mono"`;
+    HG = { adv: m.measureText("M").width / 100, G: heroGL(heroCv), last: -1, vis: true };
+    if (HG.G) {
+      heroCv.addEventListener("webglcontextlost", e => { e.preventDefault(); HG.lost = true; });
+      heroCv.addEventListener("webglcontextrestored", () => { HG.G = heroGL(heroCv); HG.lost = false; if (HG.G) buildHeroGpu(); });
+    }
+    new IntersectionObserver(es => { HG.vis = es[0].isIntersecting; }, { rootMargin: "80px" }).observe(heroCv);
+  }
+  const t0 = performance.now();
+  if (HERO_V === "10") HG.data = heroDither(img, box, dpr);
+  else {
+    const cw = heroCellPx(dpr), ratio = Math.round(cw / HG.adv * HT.lh) / cw;
+    if (!HG.cov || HG.ratio !== ratio) { HG.cov = glyphCoverage(ratio, HT.weight); HG.ratio = ratio; }
+    HG.data = heroAscii(img, box, dpr, HERO_V === "9");
+  }
+  HG.ms = performance.now() - t0; heroCv.dataset.ms = HG.ms.toFixed(0); heroCv.dataset.gl = HG.G ? "1" : "0";
+  const Q = HG.data, G = HG.G;
+  if (G) {
+    const gl = G.gl;
+    if (Q.kind === "dither") {
+      hgTex(G, 0, "uIdx", Q.cols, Q.rows, Q.idx, gl.LUMINANCE);
+      hgTex(G, 1, "uPal", Q.K, 1, Q.pal, gl.RGBA);
+      const bn = new Uint8Array(4096); for (let i = 0; i < 4096; i++) bn[i] = BN ? BN[i] * 255 : hash(i & 63, i >> 6) * 255;
+      hgTex(G, 2, "uBN", 64, 64, bn, gl.LUMINANCE, false, true);
+      gl.uniform1f(G.U("uK"), Q.K);
+    } else {
+      hgTex(G, 0, "uInk", Q.cols, Q.rows, Q.ink, gl.RGBA);
+      hgTex(G, 1, "uAux", Q.cols, Q.rows, Q.aux, gl.RGBA);
+      hgTex(G, 2, "uGlow", Q.cols, Q.rows, Q.glow, gl.RGBA, true);
+      hgTex(G, 3, "uAtlas", 0, 0, glyphSheet(Q.cw, Q.ch, Q.fs, HT.weight), gl.RGBA);
+      gl.uniform1f(G.U("uN"), HG_CHARS.length); gl.uniform1f(G.U("uGlowK"), HERO_V === "9" ? HT.glow9 : HT.glow[desk() ? 0 : 1]); gl.uniform1f(G.U("uFlick"), HT.flick);
+    }
+    gl.uniform2f(G.U("uGrid"), Q.cols, Q.rows); gl.uniform2f(G.U("uCell"), Q.cw, Q.ch); gl.uniform2f(G.U("uOrg"), Q.org[0], Q.org[1]);
+  } else hero2d(Q);
+  HG.last = -1; HG.pw = 0;
+  heroGpuFrame(performance.now() / 1000, true);
+  heroCv.classList.add("on");
+}
+function heroGpuFrame(t, force) {
+  if (!HG || !HG.data || !HG.G || HG.lost || (!HG.vis && !force)) return;
+  const live = reduce ? 0 : 1, r = heroCv.getBoundingClientRect(), k = heroCv.width / r.width;
+  const mx = (P.x - r.left) * k - HG.data.org[0], my = (P.y - r.top) * k - HG.data.org[1];
+  const inside = P.x - r.left > -40 && P.y - r.top > -40 && P.x - r.left < r.width + 40 && P.y - r.top < r.height + 40;
+  HG.pw = mix(HG.pw || 0, inside && live ? 1 : 0, 0.12);
+  const hot = HG.pw > 0.01;
+  if (!force && (!live || (!hot && t - HG.last < 1 / 30))) return;
+  if (!force && hot && t - HG.last < 1 / 60) return;
+  HG.last = t;
+  const { gl, U } = HG.G;
+  gl.viewport(0, 0, heroCv.width, heroCv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(U("uRes"), heroCv.width, heroCv.height); gl.uniform1f(U("uT"), t); gl.uniform1f(U("uLive"), live);
+  gl.uniform3f(U("uPtr"), mx, my, (desk() ? 95 : 70) * k * HG.pw);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function hero2d(Q) {
+  const g = heroCv.getContext("2d"); if (!g) return;
+  g.clearRect(0, 0, heroCv.width, heroCv.height);
+  if (Q.kind === "dither") {
+    const c = document.createElement("canvas"); c.width = Q.cols; c.height = Q.rows;
+    const cg = c.getContext("2d"), im = cg.createImageData(Q.cols, Q.rows);
+    for (let i = 0; i < Q.idx.length; i++) if (Q.idx[i]) im.data.set(Q.pal.subarray(Q.idx[i] * 4, Q.idx[i] * 4 + 4), i * 4);
+    cg.putImageData(im, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(c, Q.org[0], Q.org[1], Q.cols * Q.cw, Q.rows * Q.ch); return;
+  }
+  g.font = `${HT.weight} ${Q.fs}px "Geist Mono"`; g.textAlign = "center"; g.textBaseline = "middle";
+  for (let y = 0; y < Q.rows; y++) for (let x = 0; x < Q.cols; x++) {
+    const o = (y * Q.cols + x) * 4; if (!Q.aux[o + 2] || !Q.ink[o + 3]) continue;
+    g.fillStyle = `rgb(${Q.ink[o]},${Q.ink[o + 1]},${Q.ink[o + 2]})`; g.globalAlpha = Q.aux[o + 2] / 255;
+    g.fillText(HG_CHARS[Q.ink[o + 3]], Q.org[0] + (x + 0.5) * Q.cw, Q.org[1] + (y + 0.5) * Q.ch);
+  }
+  g.globalAlpha = 1;
 }
 
 /* place words: the letters are filled with that place's photo, run through its own treatment */
@@ -999,6 +1334,7 @@ function loop(now) {
   railFrame();
   beamFrame(t);
   if (heroDots && !scrolling) heroDraw(t);
+  if (HG && !scrolling) heroGpuFrame(t);
   for (const g of grids) if (g.vis || reduce) g.draw(now);
   for (const l of leds) l.draw(t);
   for (const s of sprites) s.draw(t);
