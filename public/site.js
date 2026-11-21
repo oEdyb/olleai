@@ -1147,7 +1147,7 @@ function dotMask(img) {
   const p = CELL() * 2, c = document.createElement("canvas"); c.width = W; c.height = H;
   const g = c.getContext("2d"); g.fillStyle = "#fff";
   const T = Math.min(H * 0.22, p * 15), Bz = Math.min(H * 0.36, p * 26), side = img.closest(".turn") || img.matches(".me-portrait") ? Math.min(W * 0.16, p * 9) : 0;
-  const small = img.matches(".me-portrait"), blob = img.matches(".turn img"); const [fx, fy] = (img.dataset.focus || "0.5 0.5").split(" ").map(Number); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
+  const small = img.matches(".me-portrait"), blob = img.matches(".turn img"); const [fx, fy] = (img.dataset.focus || "0.5 0.5").split(" ").map(Number); const core = +(img.dataset.core || 0.58); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
   const cols = Math.ceil(W / p), rows = Math.ceil(H / p);
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
     const cy = (y + 0.5) * p, n = fbm(x * 0.11 + 3, y * 0.11);
@@ -1156,8 +1156,9 @@ function dotMask(img) {
     if (side) v = Math.min(v, smooth(0, side, cx - p + (n2 - 0.5) * side * 0.9), smooth(0, side, W - cx - p + (n2 - 0.5) * side * 0.9));
     if (blob) {
       const dx = cx - fx * W, dy = cy - fy * H;
-      const nx = dx < 0 ? dx / (fx * W) : dx / ((1 - fx) * W), ny = (dy < 0 ? dy / (fy * H) : dy / ((1 - fy) * H)) * 0.85;
-      v = 1 - smooth(0.58, 1.0, Math.pow(Math.pow(Math.abs(nx), 2.6) + Math.pow(Math.abs(ny), 2.6), 1 / 2.6) + (n - 0.5) * 0.3);
+      const nx = dx < 0 ? dx / (fx * W) : dx / ((1 - fx) * W), ny = (dy < 0 ? dy / (fy * H) : dy / ((1 - fy) * H)) * (dy < 0 ? 0.8 : 1);
+      v = 1 - smooth(core, 1.0, Math.hypot(nx, ny) + (n - 0.5) * 0.3);
+      v *= smooth(0, p * 2.5, Math.min(cx, W - cx, cy, H - cy) - p * 0.5);
     }
     if (v <= 0.02) continue;
     if (v >= 0.97) { g.fillRect(x * p, y * p, p + 0.5, p + 0.5); continue; }

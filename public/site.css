@@ -568,3 +568,4 @@ html:not(.js) .hero-photo{opacity:1}
   .place .pw,.place .pm{margin-left:22px}
 }
 .turn img{object-position:50% 50%}
+.turn img{aspect-ratio:4/5}
