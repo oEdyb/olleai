@@ -1143,19 +1143,14 @@ function beamFrame(t) {
 /* photos dissolve into round halftone dots. A smooth presence field (edge distance bent by low-frequency
    noise, opened up around the subject) sets each dot's ink coverage; dots are drawn per device pixel with
    anti-aliasing into an alpha mask, so the photo itself shows through them */
-const DOT = Object.assign({ grid: "rot", p: [7, 5], wob: 0.7, feat: 0.38, gam: 1 }, window.__dot || {});
-const DOT_LAT = {
-  rot: [Math.SQRT1_2, Math.SQRT1_2, -Math.SQRT1_2, Math.SQRT1_2],
-  sq: [1, 0, 0, 1],
-  hex: [1, 0, 0.5, Math.sqrt(3) / 2],
-  hex15: [Math.cos(0.2618), Math.sin(0.2618), Math.cos(1.309), Math.sin(1.309)],
-};
-/* radius (in pitch units) whose dots cover a given fraction of the plane, measured once per lattice */
-function dotRadii(B) {
+const DOT = Object.assign({ p: [6, 5], wob: 0.55, bw: 0.85, feat: 0.3, lead: 0.22 }, window.__dot || {});
+const DOT_B = [1, 0, 0.5, Math.sqrt(3) / 2];
+/* hex lattice: the dot radius (in pitch units) that inks a given fraction of the plane, measured once */
+const DOT_R = (() => {
   const n = 48, d = [];
   for (let t = 0; t < n; t++) for (let s = 0; s < n; s++) {
-    const a = (s + 0.5) / n, b = (t + 0.5) / n, x = a * B[0] + b * B[2], y = a * B[1] + b * B[3];
-    let m = 9; for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) m = Math.min(m, Math.hypot(x - i * B[0] - j * B[2], y - i * B[1] - j * B[3]));
+    const a = (s + 0.5) / n, b = (t + 0.5) / n, x = a + b * 0.5, y = b * DOT_B[3];
+    let m = 9; for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) m = Math.min(m, Math.hypot(x - i - j * 0.5, y - j * DOT_B[3]));
     d.push(m);
   }
   d.sort((p, q) => p - q);
@@ -1163,8 +1158,7 @@ function dotRadii(B) {
   for (let k = 1; k <= 256; k++) R[k] = d[Math.min(d.length - 1, Math.round(k / 256 * d.length) - 1)];
   R[256] += 0.03;
   return R;
-}
-const dotRadiiCache = {};
+})();
 /* where the subject sits inside the element, from image-space focus through object-fit: cover */
 function dotFocus(img, W, H) {
   const f = (img.dataset.focus || "0.5 0.5").split(" ").map(Number), iw = img.naturalWidth || W, ih = img.naturalHeight || H;
@@ -1180,17 +1174,17 @@ function dotField(img, W, H, p) {
     const core = +(img.dataset.core || 0.5);
     return (x, y) => {
       const dx = x - fx, dy = y - fy, nx = dx / (dx < 0 ? fx : W - fx), ny = dy / (dy < 0 ? fy : H - fy) * (dy < 0 ? 0.85 : 1);
-      const q = Math.hypot(nx, ny) + nz(x, y, 1) * DOT.wob * 0.45;
+      const q = Math.hypot(nx, ny) + nz(x, y, 1) * DOT.wob * DOT.bw;
       return (1 - smooth(core, 1.02, q)) * edge(Math.min(x, W - x, y, H - y), p * 2);
     };
   }
-  const T = kind === "foot" ? 0 : Math.min(H * 0.3, 300), Bb = kind === "foot" ? H * 0.34 : Math.min(H * 0.4, 380), S = kind === "foot" ? W * 0.14 : 0;
-  const band = (d, w, k, x, y) => edge(d + nz(x, y, k) * w * DOT.wob, w) * edge(d, p * 1.5);
+  const T = kind === "foot" ? 0 : Math.min(H * 0.28, 250), Bb = kind === "foot" ? H * 0.27 : Math.min(H * 0.38, 320), S = kind === "foot" ? W * 0.14 : 0;
+  const band = (d, w, k, x, y) => smooth(0, 1, (d - w * DOT.lead) / (w * (1 - DOT.lead)) + nz(x, y, k) * DOT.wob * 1.6) * edge(d, w * DOT.lead);
   return (x, y) => {
     let v = Bb ? band(H - y, Bb, 2, x, y) : 1;
     if (T) v = Math.min(v, band(y, T, 3, x, y));
     if (S) v = Math.min(v, band(x, S, 4, x, y), band(W - x, S, 5, x, y));
-    if (fr) { const g = 1 - smooth(fr, fr * 1.9, Math.hypot(x - fx, (y - fy) * 1.15)); v = Math.max(v, g * edge(Math.min(y, H - y), p * 3)); }
+    if (fr) { const g = 1 - smooth(fr, fr * 1.9, Math.hypot(x - fx, (y - fy) * 1.15)); v = Math.max(v, g * Math.min(T ? band(y, T * 0.55, 6, x, y) : 1, band(H - y, Bb * 0.55, 7, x, y))); }
     return v;
   };
 }
@@ -1198,7 +1192,7 @@ async function buildDots(img) {
   const r = img.getBoundingClientRect(), W = r.width, H = r.height;
   if (W < 4 || H < 4) return;
   const t0 = performance.now(), k = Math.min(devicePixelRatio || 1, 3), Wd = Math.round(W * k), Hd = Math.round(H * k);
-  const p = DOT.p[desk() ? 0 : 1], B = DOT_LAT[DOT.grid] || DOT_LAT.rot, R = dotRadiiCache[DOT.grid] || (dotRadiiCache[DOT.grid] = dotRadii(B));
+  const p = DOT.p[desk() ? 0 : 1], B = DOT_B, R = DOT_R;
   const e1x = B[0] * p, e1y = B[1] * p, e2x = B[2] * p, e2y = B[3] * p, det = e1x * e2y - e2x * e1y;
   const ia = e2y / det, ib = -e2x / det, ic = -e1y / det, id = e1x / det, field = dotField(img, W, H, p);
   const corners = [[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => [ia * x + ib * y, ic * x + id * y]);
@@ -1209,24 +1203,28 @@ async function buildDots(img) {
     const q = j * ni + i, x = (i + i0) * e1x + (j + j0) * e2x, y = (i + i0) * e1y + (j + j0) * e2y;
     CX[q] = x; CY[q] = y;
     if (x < -p || y < -p || x > W + p || y > H + p) continue;
-    const v = Math.pow(clamp(field(clamp(x, 0, W), clamp(y, 0, H)), 0, 1), DOT.gam);
+    const v = clamp(field(clamp(x, 0, W), clamp(y, 0, H)), 0, 1);
     RR[q] = v >= 0.999 ? full : R[Math.round(v * 256)] * p;
   }
   const c = document.createElement("canvas"); c.width = Wd; c.height = Hd;
   const g = c.getContext("2d"), im = g.createImageData(Wd, Hd), o = new Uint32Array(im.data.buffer);
+  const rowFull = new Uint8Array(nj);
+  for (let j = 0; j < nj; j++) { let f = 1; for (let i = 0; i < ni && f; i++) { const x = CX[j * ni + i]; if (x > -p && x < W + p && RR[j * ni + i] < full) f = 0; } rowFull[j] = f; }
+  const ink = (qq, rr, x, y) => { const dx = x - CX[qq], dy = y - CY[qq]; return (rr - Math.sqrt(dx * dx + dy * dy)) * k + 0.5; };
+  let ts = performance.now();
   for (let Y = 0; Y < Hd; Y++) {
-    const y = (Y + 0.5) / k;
+    if ((Y & 15) === 0 && performance.now() - ts > 8) { await new Promise(res => setTimeout(res)); ts = performance.now(); }
+    const y = (Y + 0.5) / k, jr = (id * y - j0) | 0;
+    if (rowFull[jr] && rowFull[jr + 1]) { o.fill(0xff000000, Y * Wd, Y * Wd + Wd); continue; }
     for (let X = 0; X < Wd; X++) {
       const x = (X + 0.5) / k, a = ia * x + ib * y - i0, b = ic * x + id * y - j0, i = a | 0, j = b | 0, q = j * ni + i;
       const r00 = RR[q], r10 = RR[q + 1], r01 = RR[q + ni], r11 = RR[q + ni + 1];
       if (r00 >= full && r10 >= full && r01 >= full && r11 >= full) { o[Y * Wd + X] = 0xff000000; continue; }
       if (!(r00 || r10 || r01 || r11)) continue;
-      let m = 0;
-      for (const qq of [q, q + 1, q + ni, q + ni + 1]) {
-        const rr = RR[qq]; if (!rr) continue;
-        const dx = x - CX[qq], dy = y - CY[qq], s = (rr - Math.sqrt(dx * dx + dy * dy)) * k + 0.5;
-        if (s > m) { m = s; if (m >= 1) break; }
-      }
+      let m = r00 ? ink(q, r00, x, y) : 0;
+      if (r10 && m < 1) m = Math.max(m, ink(q + 1, r10, x, y));
+      if (r01 && m < 1) m = Math.max(m, ink(q + ni, r01, x, y));
+      if (r11 && m < 1) m = Math.max(m, ink(q + ni + 1, r11, x, y));
       if (m > 0) o[Y * Wd + X] = ((m >= 1 ? 255 : m * 255) << 24) >>> 0;
     }
   }
@@ -1252,7 +1250,7 @@ function dotRun() {
   if (dotBusy || !dotQ.size) return;
   const img = dotQ.values().next().value; dotQ.delete(img); dotBusy = true;
   const go = () => buildDots(img).catch(() => img.classList.add("masked")).finally(() => { dotBusy = false; setTimeout(dotRun, 0); });
-  if (img.complete && img.naturalWidth) go(); else img.addEventListener("load", go, { once: true });
+  img.decode().then(go, go);
 }
 function dotMask(img) {
   dotQ.delete(img);
