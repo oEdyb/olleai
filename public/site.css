@@ -554,3 +554,17 @@ html:not(.js) .hero-photo{opacity:1}
   [data-hero="4"] .hero-photo{--r:calc(var(--lr,0px) + var(--sp,0) * 600px)}
 }
 @media (forced-colors:active){.hero-art{display:none}}
+
+/* timeline v2: one spine, dithered markers, dates on one x */
+.places{position:relative}
+.places::before{content:"";position:absolute;left:var(--sx,-9px);top:var(--st,0);height:var(--sh,0);width:1.5px;margin-left:-.75px;background:#34312c;pointer-events:none}
+.place::before,.place .yr::before,.place .yr::after{display:none!important}
+.place .yr{display:flex;align-items:center;gap:12px;padding-left:0;margin-left:0}
+.place .yr .mk{flex:none;width:14px;height:14px;color:var(--a);background:var(--bg);border-radius:50%;position:relative;z-index:1;transform:translateY(var(--cs,0px))}
+@media (max-width:899px){
+  .place{padding-left:var(--pad)}
+  .place .yr{gap:10px;padding:0 0 4px;margin-left:0}
+  .place .yr .mk{width:12px;height:12px;transform:none}
+  .place .pw,.place .pm{margin-left:22px}
+}
+.turn img{object-position:50% 50%}

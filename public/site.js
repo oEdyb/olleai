@@ -1147,14 +1147,18 @@ function dotMask(img) {
   const p = CELL() * 2, c = document.createElement("canvas"); c.width = W; c.height = H;
   const g = c.getContext("2d"); g.fillStyle = "#fff";
   const T = Math.min(H * 0.22, p * 15), Bz = Math.min(H * 0.36, p * 26), side = img.closest(".turn") || img.matches(".me-portrait") ? Math.min(W * 0.16, p * 9) : 0;
-  const small = img.matches(".me-portrait"), blob = img.matches(".turn img, .press-photo"); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
+  const small = img.matches(".me-portrait"), blob = img.matches(".turn img"); const [fx, fy] = (img.dataset.focus || "0.5 0.5").split(" ").map(Number); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
   const cols = Math.ceil(W / p), rows = Math.ceil(H / p);
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
     const cy = (y + 0.5) * p, n = fbm(x * 0.11 + 3, y * 0.11);
     const cx = (x + 0.5) * p, n2 = fbm(x * 0.13 + 9, y * 0.13 + 4);
     let v = Math.min(smooth(0, Tt, cy - p + (n - 0.5) * Tt * 0.9), smooth(0, Bb, H - cy - p + (n - 0.5) * Bb * 0.9));
     if (side) v = Math.min(v, smooth(0, side, cx - p + (n2 - 0.5) * side * 0.9), smooth(0, side, W - cx - p + (n2 - 0.5) * side * 0.9));
-    if (blob) { const nx = (cx - W / 2) / (W / 2), ny = (cy - H / 2) / (H / 2); v = 1 - smooth(0.5, 1.0, Math.pow(Math.pow(Math.abs(nx), 2.6) + Math.pow(Math.abs(ny), 2.6), 1 / 2.6) + (n - 0.5) * 0.34); }
+    if (blob) {
+      const dx = cx - fx * W, dy = cy - fy * H;
+      const nx = dx < 0 ? dx / (fx * W) : dx / ((1 - fx) * W), ny = (dy < 0 ? dy / (fy * H) : dy / ((1 - fy) * H)) * 0.85;
+      v = 1 - smooth(0.58, 1.0, Math.pow(Math.pow(Math.abs(nx), 2.6) + Math.pow(Math.abs(ny), 2.6), 1 / 2.6) + (n - 0.5) * 0.3);
+    }
     if (v <= 0.02) continue;
     if (v >= 0.97) { g.fillRect(x * p, y * p, p + 0.5, p + 0.5); continue; }
     const s = p * Math.min(1, Math.sqrt(v) * 1.08);
@@ -1242,6 +1246,33 @@ $$("[data-lang]").forEach(b => b.addEventListener("click", () => {
 }));
 
 /* timeline labels sit on the letters' cap centre, not the line box */
+/* the timeline: one continuous spine through dithered markers that twinkle in each place's colour */
+const marks = $$(".place .mk").map(cv => ({ cv, col: null, last: -1 }));
+function spine() {
+  const pl = $(".places"); if (!pl || marks.length < 2) return;
+  const pr = pl.getBoundingClientRect(), c = r => [r.left + r.width / 2 - pr.left, r.top + r.height / 2 - pr.top];
+  const [x0, y0] = c(marks[0].cv.getBoundingClientRect()), [, y1] = c(marks[marks.length - 1].cv.getBoundingClientRect());
+  pl.style.setProperty("--sx", x0.toFixed(1) + "px"); pl.style.setProperty("--st", y0.toFixed(1) + "px"); pl.style.setProperty("--sh", (y1 - y0).toFixed(1) + "px");
+  for (const m of marks) { const s = desk() ? 14 : 12, dpr = Math.min(devicePixelRatio || 1, 3); m.s = s; m.cv.width = m.cv.height = Math.round(s * dpr); m.dpr = dpr; m.col = getComputedStyle(m.cv).color; m.last = -1; }
+  markFrame(performance.now() / 1000, true);
+}
+function markFrame(t, force) {
+  for (const m of marks) {
+    if (!m.s) continue;
+    const r = m.cv.getBoundingClientRect(); if (!force && (r.bottom < 0 || r.top > innerHeight)) continue;
+    const step = reduce ? 0 : Math.floor(t * 4); if (!force && step === m.last) continue; m.last = step;
+    const g = m.cv.getContext("2d"), n = 7, cell = m.cv.width / n;
+    g.clearRect(0, 0, m.cv.width, m.cv.height); g.fillStyle = m.col;
+    const sh = step * 11 + marks.indexOf(m) * 23;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const d = Math.hypot(x - 3, y - 3) / 3.4, v = 1 - d * d;
+      if (v <= 0) continue;
+      const bn = BN ? BN[((y + sh) & 63) * 64 + ((x + sh * 3) & 63)] : 0.5;
+      if (v * 1.25 > bn) { const s = cell * (v > 0.75 ? 0.92 : 0.78); g.fillRect(x * cell + (cell - s) / 2, y * cell + (cell - s) / 2, s, s); }
+    }
+  }
+}
+
 function capAlign() {
   const g = document.createElement("canvas").getContext("2d");
   for (const pl of $$(".place")) {
@@ -1258,6 +1289,7 @@ function capAlign() {
     const capMid = base - cap / 2, rowMid = pr.top + pr.height / 2;
     pl.style.setProperty("--cs", (capMid - rowMid).toFixed(1) + "px");
   }
+  spine();
 }
 
 /* land a hash link on the thing it names, after our layout has settled */
@@ -1295,7 +1327,7 @@ function relayout() {
   kts.forEach(k => k.reset());
   fitAll();
   kts.forEach(k => k.measure());
-  $$(".photo img, .turn img, .press-photo").forEach(dotMask);
+  $$(".photo img, .turn img").forEach(dotMask);
   capAlign();
   measureTex();
   buildHeroArt();
@@ -1333,6 +1365,7 @@ function loop(now) {
   }
   railFrame();
   beamFrame(t);
+  if (!scrolling) markFrame(t);
   if (heroDots && !scrolling) heroDraw(t);
   if (HG && !scrolling) heroGpuFrame(t);
   for (const g of grids) if (g.vis || reduce) g.draw(now);
