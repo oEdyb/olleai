@@ -455,7 +455,7 @@ if (heroPhoto) {
   const shown = () => heroPhoto.classList.add("on");
   if (heroPhoto.complete && heroPhoto.naturalWidth) heroPhoto.decode().then(shown, shown); else heroPhoto.addEventListener("load", () => heroPhoto.decode().then(shown, shown), { once: true });
 }
-const heroSrcReady = HERO_V === "1" ? Promise.resolve(null) : loadImg("img/hero-soft-640.webp").then(img => {
+const heroSrcReady = HERO_V === "1" ? Promise.resolve(null) : loadImg("img/hero-soft-640-g2.webp").then(img => {
   heroImg = img;
   if (!img) return null;
   const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
