@@ -502,8 +502,55 @@ html.js .photo img.masked,html.js .turn img.masked{opacity:1}
 @media (max-width:359px){.lk.major{flex-wrap:wrap;gap:6px 18px}}
 .stat-w:not(.led-on) .cv{height:0}
 
-#tjorn .chapter-body{grid-template-columns:minmax(0,4fr) minmax(0,5fr) minmax(0,4fr);align-items:center}
-.me-portrait{width:100%;max-width:360px;height:auto;aspect-ratio:4/5;object-fit:cover;justify-self:end}
-html.js .me-portrait{opacity:0;transition:opacity .35s ease}
-html.js .me-portrait.masked{opacity:1}
-@media (max-width:899px){#tjorn .chapter-body{grid-template-columns:1fr}.me-portrait{justify-self:start;max-width:280px;margin-top:12px}}
+
+/* ---- reference-audit round ---- */
+.places .place{padding-right:calc(var(--pad) + 28px)}
+.place .pm .d{white-space:normal;max-width:22ch}
+#lulea .photo img{object-position:50% 78%}
+.vrow.tt .vid .th{aspect-ratio:3/4}
+.projects .h2{font-size:var(--f6);line-height:1.05;font-weight:800;font-stretch:115%;letter-spacing:-.015em}
+.repo{max-width:960px;grid-template-columns:minmax(150px,240px) minmax(0,1fr) auto}
+.repo .m{justify-self:start;font-family:var(--mono);font-size:var(--f1);color:var(--ink-3)}
+.projects-head{max-width:960px}
+.beam-in .slot{position:relative}
+.sbar{position:absolute;left:0;bottom:-26px;height:1px;background:var(--ink-2)}
+.sbar span{position:absolute;left:0;top:6px;font-family:var(--mono);font-size:var(--f1);color:var(--ink-2);white-space:nowrap}
+.ring-l{position:absolute;left:88%;top:72%;font-family:var(--mono);font-size:var(--f1);color:var(--ink-2);padding-left:44px;white-space:nowrap}
+.ring-l::before{content:"";position:absolute;left:0;top:50%;width:38px;height:1px;background:var(--ink-3)}
+.press-photo{max-height:72lvh}
+@media (max-width:899px){
+  .vrow.tt{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;margin:0 calc(-1 * var(--pad));padding:0 var(--pad);scrollbar-width:none}
+  .vrow.tt::-webkit-scrollbar{display:none}
+  .vrow.tt .vid{flex:0 0 58%;scroll-snap-align:start}
+  .places .place{padding-right:var(--pad)}
+  .ring-l{left:auto;right:0;top:-22px;padding-left:0}
+  .ring-l::before{display:none}
+}
+@media (min-width:900px) and (max-width:1279px){
+  .ring-l{left:auto;right:0;top:-26px;padding-left:0}
+  .ring-l::before{display:none}
+  .turn{grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:48px}
+  .turn .big .thin{font-size:.78em}
+}
+.repo{grid-template-columns:minmax(150px,240px) auto auto;justify-content:start;column-gap:28px}
+@media (max-width:899px){.repo{grid-template-columns:1fr}}
+@media (max-width:899px){.place .pm .d{max-width:none}}
+.turn img{object-position:64% 58%}
+
+/* ---- hero art: cutout photo + optional ASCII/LED canvas ---- */
+.hero-art{position:absolute;z-index:0;right:max(var(--pad),4vw);bottom:0;height:min(100%,calc(100lvh - var(--bar)));aspect-ratio:4/5;max-width:46vw;pointer-events:none}
+.hero-art .hero-photo,.hero-art .hero-cv{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%}
+.hero-photo,.hero-cv{opacity:0;transition:opacity .45s ease}
+.hero-photo.on,.hero-cv.on{opacity:1}
+html:not(.js) .hero-photo{opacity:1}
+[data-hero="2"] .hero-photo,[data-hero="5"] .hero-photo{display:none}
+[data-hero="1"] .hero-cv{display:none}
+[data-hero="3"] .hero-photo{-webkit-mask:radial-gradient(ellipse 30% 33% at 52% 41%,#000 58%,transparent 100%);mask:radial-gradient(ellipse 30% 33% at 52% 41%,#000 58%,transparent 100%)}
+[data-hero="4"] .hero-photo{--r:calc(var(--lr,0px) + var(--sp,0) * 900px);-webkit-mask:radial-gradient(circle at var(--mx,-999px) var(--my,-999px),transparent var(--r),#000 calc(var(--r) + 70px));mask:radial-gradient(circle at var(--mx,-999px) var(--my,-999px),transparent var(--r),#000 calc(var(--r) + 70px))}
+[data-hero="4"] .hero-art{pointer-events:auto}
+@media (max-width:899px){
+  .hero-art{position:absolute;left:50%;right:auto;top:0;bottom:auto;height:auto;width:min(68vw,280px);max-width:none;transform:translateX(-50%)}
+  .hero-in{padding-top:calc(min(68vw,280px) * 1.25 * .97)}
+  [data-hero="4"] .hero-photo{--r:calc(var(--lr,0px) + var(--sp,0) * 600px)}
+}
+@media (forced-colors:active){.hero-art{display:none}}

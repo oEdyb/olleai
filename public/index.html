@@ -6,7 +6,8 @@
 <title>Olle Dyberg</title>
 <meta name="description" content="Olle Dyberg (@olleai): engineering physicist from Sweden who left an optics PhD position in 2026 to build with AI.">
 <link rel="preload" href="fonts/Anybody-normal.woff2" as="font" type="font/woff2" crossorigin>
-<script>document.documentElement.classList.add("js")</script>
+<script>document.documentElement.classList.add("js");(function(){var v=new URLSearchParams(location.search).get("hero");document.documentElement.dataset.hero=/^[1-5]$/.test(v||"")?v:"3"})()</script>
+<link rel="preload" as="image" type="image/webp" imagesrcset="img/hero-cut-480.webp 480w, img/hero-cut-800.webp 800w, img/hero-cut-1200.webp 1200w" imagesizes="(max-width:899px) min(68vw,280px), min(44vw,700px)" fetchpriority="high">
 <link rel="stylesheet" href="site.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","@id":"https://olleai.com/#olle-dyberg","name":"Olle Dyberg","alternateName":"@olleai","jobTitle":"Engineering physicist and AI creator","alumniOf":"Luleå University of Technology","sameAs":["https://www.tiktok.com/@olleai","https://www.youtube.com/@olleai","https://www.instagram.com/olle.ai","https://x.com/olledyberg","https://github.com/oEdyb","https://www.linkedin.com/in/olledyberg"]}</script>
 </head>
@@ -44,7 +45,10 @@
 
 <main>
   <section class="hero" id="top" data-rail="Olle" data-touch>
-    <canvas class="cv" data-scene="portrait" aria-hidden="true"></canvas>
+    <div class="hero-art" aria-hidden="true">
+      <canvas class="hero-cv"></canvas>
+      <img class="hero-photo" src="img/hero-cut-800.webp" srcset="img/hero-cut-480.webp 480w, img/hero-cut-800.webp 800w, img/hero-cut-1200.webp 1200w" sizes="(max-width:899px) min(68vw,280px), min(44vw,700px)" width="1080" height="1350" alt="" fetchpriority="high" decoding="async">
+    </div>
     <div class="hero-in">
       <h1 class="name">
         <span class="l1" data-kt data-morph data-w="880" data-s="118" data-hw="260" data-hs="150" data-fit=".44,1">Olle</span>
@@ -71,7 +75,7 @@
     <div class="vhead jh"><h2 id="journey-h">How I got here</h2></div>
     <a class="place" href="me.html#lulea" style="--a:var(--lulea)">
       <span class="yr"><b>2019–24</b></span>
-      <span class="pw" data-fit=".6,.84" data-treat="blue" data-hover="140" data-src="img/ltu-tex.jpg">Luleå</span>
+      <span class="pw" data-fit=".6,.84" data-treat="blue" data-crop-top="0.38" data-hover="140" data-src="img/ltu-tex.jpg">Luleå</span>
       <span class="pm"><span class="d">Engineering physics</span><i data-icon="arrow"></i></span>
     </a>
     <a class="place" href="me.html#fribourg" style="--a:var(--fribourg)">

@@ -447,112 +447,88 @@ const grids = [];
 const leds = $$("canvas[data-led]").map(ledWord);
 const sprites = $$("canvas.sprite").map(sprite);
 
-/* hero portrait made of ASCII glyphs, kept away from the text */
-const heroCv = $(".hero .cv[data-scene=portrait]");
-let portraitImg = null;
-const RAMP = " .,:;-=+*cloO0#@";
-const hero = { cells: null };
-function glyphAtlas(chars, cw, chh, dpr, colors) {
-  const a = document.createElement("canvas");
-  a.width = Math.ceil(cw * dpr) * chars.length; a.height = Math.ceil(chh * dpr) * colors.length;
-  const g = a.getContext("2d");
-  g.font = `500 ${Math.round(chh * 0.86 * dpr)}px "Geist Mono", ui-monospace, monospace`;
-  g.textAlign = "center"; g.textBaseline = "middle";
-  colors.forEach((c, j) => { g.fillStyle = c; [...chars].forEach((ch, i) => g.fillText(ch, (i + 0.5) * Math.ceil(cw * dpr), (j + 0.5) * Math.ceil(chh * dpr))); });
-  return { a, w: Math.ceil(cw * dpr), h: Math.ceil(chh * dpr) };
+/* hero: a clean cutout of the real photo, shown in one of five treatments (?hero=1..5) */
+const heroArt = $(".hero-art"), heroCv = heroArt && $(".hero-cv", heroArt), heroPhoto = heroArt && $(".hero-photo", heroArt);
+const HERO_V = document.documentElement.dataset.hero || "1";
+let heroSrc = null;
+if (heroPhoto) {
+  const shown = () => heroPhoto.classList.add("on");
+  if (heroPhoto.complete && heroPhoto.naturalWidth) heroPhoto.decode().then(shown, shown); else heroPhoto.addEventListener("load", () => heroPhoto.decode().then(shown, shown), { once: true });
 }
-function buildHero() {
-  if (!heroCv || !portraitImg) return;
-  const D = desk(), cw = D ? 5.4 : 4.4, chh = D ? 9 : 7.4;
-  const r = heroCv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
-  heroCv.width = Math.round(r.width * dpr); heroCv.height = Math.round(r.height * dpr);
-  const cols = Math.ceil(r.width / cw), rows = Math.ceil(r.height / chh);
-  const N = 320, c = document.createElement("canvas"); c.width = c.height = N;
-  const g = c.getContext("2d"); g.drawImage(portraitImg, 0, 0, N, N);
-  const pd = g.getImageData(0, 0, N, N).data;
-  const text = $$(".hero-in .name, .hero-in .lede, .hero-in .lk2 a").map(el => {
-    const q = el.getBoundingClientRect();
-    return { x0: (q.left - r.left) / cw, x1: (q.right - r.left) / cw, y0: (q.top - r.top) / chh, y1: (q.bottom - r.top) / chh };
-  });
-  const heroH = $(".hero").getBoundingClientRect().height;
-  let Spx, oxp, oyp;
-  if (D) { Spx = Math.min(heroH * 1.0, r.width * 0.5); oxp = r.width * 0.73 - Spx / 2; oyp = heroH - Spx + 8; }
-  else { Spx = Math.min(r.width * 0.92, 360); oxp = (r.width - Spx) / 2; oyp = 4; }
-  const lum = new Float32Array(cols * rows), pres = new Float32Array(cols * rows);
-  const pcx = oxp + Spx / 2, pcy = oyp + Spx / 2;
-  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-    const px = (x + 0.5) * cw, py = (y + 0.5) * chh;
-    let tm = 0;
-    for (const q of text) { const dx = Math.max(q.x0 - x, 0, x - q.x1), dy = Math.max(q.y0 - y, 0, y - q.y1); tm = Math.max(tm, 1 - smooth(0.6, 3, Math.hypot(dx, dy * 1.4))); }
-    const n = fbm(px * 0.01, py * 0.01);
-    const dd = Math.hypot((px - pcx) / (Spx * (D ? 0.8 : 0.72)), (py - pcy) / (Spx * (D ? 0.74 : 0.64)));
-    let p = 1 - smooth(0.5, 1.05, dd + (n - 0.5) * 0.6);
-    p *= 1 - smooth(r.height - 70, r.height - 6, py + n * 40);
-    let l = 0;
-    const u = (px - oxp) / Spx, v = (py - oyp) / Spx;
-    if (u >= 0 && u < 1 && v >= 0 && v < 1) {
-      const ix = u * N | 0, iy = v * N | 0, sx = Math.max(1, Math.round(cw / Spx * N)), sy = Math.max(1, Math.round(chh / Spx * N));
-      let s = 0, k = 0;
-      for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) { s += pd[(Math.min(N - 1, iy + j) * N + Math.min(N - 1, ix + i)) * 4]; k++; }
-      l = clamp(s / k / 255, 0, 1);
-      l *= 1 - smooth(0.8, 1.0, v + (n - 0.5) * 0.2);
+const heroSrcReady = HERO_V === "1" ? Promise.resolve(null) : loadImg("img/hero-soft-640.webp").then(img => {
+  if (!img) return null;
+  const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+  const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+  const halo = document.createElement("canvas"); halo.width = 160; halo.height = 200;
+  const hg = halo.getContext("2d"); hg.filter = "blur(9px)"; hg.drawImage(img, 0, 0, 160, 200);
+  heroSrc = { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data, halo: hg.getImageData(0, 0, 160, 200).data };
+  return heroSrc;
+});
+const GLYPHS = " .:-=+*cs#%@";
+function heroSample(u, v, span) {
+  const S = heroSrc, x0 = Math.max(0, Math.floor(u * S.w)), y0 = Math.max(0, Math.floor(v * S.h));
+  let r = 0, g = 0, b = 0, a = 0, n = 0;
+  for (let j = 0; j < span; j++) for (let i = 0; i < span; i++) {
+    const x = Math.min(S.w - 1, x0 + i), y = Math.min(S.h - 1, y0 + j), k = (y * S.w + x) * 4, al = S.d[k + 3] / 255;
+    r += S.d[k] * al; g += S.d[k + 1] * al; b += S.d[k + 2] * al; a += al; n++;
+  }
+  return a > 0 ? [r / a, g / a, b / a, a / n] : [0, 0, 0, 0];
+}
+function heroHalo(u, v) { const S = heroSrc, x = Math.min(159, Math.max(0, u * 160 | 0)), y = Math.min(199, Math.max(0, v * 200 | 0)); return S.halo[(y * 160 + x) * 4 + 3] / 255; }
+const faceW = (u, v) => 1 - smooth(0.55, 1.0, Math.hypot((u - 0.52) / 0.27, (v - 0.40) / 0.30));
+function buildHeroArt() {
+  if (!heroArt || !heroCv || HERO_V === "1") return;
+  if (!heroSrc) { heroSrcReady.then(s => s && buildHeroArt()); return; }
+  const r = heroArt.getBoundingClientRect(), W = r.width, H = r.height, dpr = Math.min(devicePixelRatio || 1, 2);
+  heroCv.width = Math.round(W * dpr); heroCv.height = Math.round(H * dpr);
+  const g = heroCv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const D = desk(), S = heroSrc;
+  if (HERO_V === "5") {
+    const p = D ? 6 : 4.5, cols = Math.ceil(W / p), rows = Math.ceil(H / p), span = Math.max(1, Math.round(p / W * S.w));
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const u = (x + 0.5) / cols, v = (y + 0.5) / rows, [R, G, B, A] = heroSample(u - span / S.w / 2, v - span / S.h / 2, span);
+      if (A < 0.04) continue;
+      const lum = (0.299 * R + 0.587 * G + 0.114 * B) / 255, s = p * Math.min(0.97, (0.55 + 0.45 * Math.sqrt(lum)) * Math.sqrt(A));
+      const lf = c => 255 * Math.pow(c / 255, 0.8);
+      sq(g, x * p + (p - s) / 2, y * p + (p - s) / 2, s, `rgb(${lf(R) | 0},${lf(G) | 0},${lf(B) | 0})`);
     }
-    lum[y * cols + x] = l * (1 - tm); pres[y * cols + x] = p * (1 - tm);
-  }
-  const shades = [];
-  for (let j = 0; j < 8; j++) { const w = j / 7; shades.push(`rgb(${mix(170, 255, w) | 0},${mix(96, 246, w) | 0},${mix(62, 232, w) | 0})`); }
-  shades.push("#3a3631", "#7dffbf");
-  Object.assign(hero, { cols, rows, cw, chh, dpr, lum, pres, atlas: glyphAtlas(RAMP, cw, chh, dpr, shades), last: 0, fi: -1, hot: false });
-  hero.frames = [];
-  const NF = reduce ? 1 : 6;
-  for (let f = 0; f < NF; f++) {
-    const c = document.createElement("canvas"); c.width = heroCv.width; c.height = heroCv.height;
-    const g = c.getContext("2d");
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) heroCell(g, x, y, f * 0.42, 0);
-    hero.frames.push(c);
-  }
-  drawHero(performance.now() / 1000, true);
-}
-function heroCell(g, x, y, t, near) {
-  const { cols, cw, chh, dpr, lum, pres, atlas } = hero, n = RAMP.length, k = y * cols + x;
-  let l = lum[k]; const pr = pres[k];
-  if (l < 0.04 && pr < 0.05) return;
-  const fl = reduce ? 0 : vnoise(x * 0.35 + t * 0.9, y * 0.35 - t * 0.6) - 0.5;
-  let ci, row;
-  if (l >= 0.04) {
-    l = clamp(l + near * 0.25, 0, 1);
-    ci = clamp(Math.round(Math.pow(l, 1.35) * (n - 1) + fl * 0.8), 1, n - 1);
-    row = near > 0.5 ? 9 : clamp(Math.round(Math.pow(l, 0.9) * 7), 0, 7);
   } else {
-    if (hash(x, y) > pr * 0.85) return;
-    ci = 1 + (fl > 0.15 ? 1 : 0); row = near > 0.35 ? 9 : 8;
+    const cw = D ? 4.4 : 3.4, ch = cw * 1.55, cols = Math.ceil(W / cw), rows = Math.ceil(H / ch), span = Math.max(1, Math.round(cw / W * S.w));
+    g.font = `800 ${(ch * 1.04).toFixed(2)}px "Geist Mono", ui-monospace, monospace`; g.textAlign = "center"; g.textBaseline = "middle";
+    const n = GLYPHS.length;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const u = (x + 0.5) / cols, v = (y + 0.5) / rows;
+      const [R, G, B, A] = heroSample(u - span / S.w / 2, v - span / S.h / 2, span);
+      let w = A;
+      if (HERO_V === "3") w *= 1 - faceW(u, v) * 0.98;
+      if (w >= 0.05) {
+        const lum = (0.299 * R + 0.587 * G + 0.114 * B) / 255;
+        const ci = clamp(Math.round(Math.pow(lum, 0.55) * (n - 1)), 1, n - 1), lift = c => 255 * Math.pow(c / 255, 0.62);
+        const col = `rgb(${lift(R) | 0},${lift(G) | 0},${lift(B) | 0})`;
+        g.fillStyle = col; g.globalAlpha = Math.min(1, w) * 0.34; g.fillRect(x * cw, y * ch, cw + 0.4, ch + 0.4);
+        g.globalAlpha = Math.min(1, w * 1.15);
+        g.fillText(GLYPHS[ci], (x + 0.5) * cw, (y + 0.5) * ch);
+      } else if (HERO_V === "3") {
+        const h = heroHalo(u, v) * (A < 0.05 ? 1 : 0);
+        if (h > 0.04 && hash(x, y) < h * 1.4) { g.globalAlpha = Math.min(0.75, h * 1.6); g.fillStyle = "#b9764f"; g.fillText(h > 0.3 ? ":" : ".", (x + 0.5) * cw, (y + 0.5) * ch); }
+      }
+    }
+    g.globalAlpha = 1;
   }
-  g.drawImage(atlas.a, ci * atlas.w, row * atlas.h, atlas.w, atlas.h, x * cw * dpr, y * chh * dpr, atlas.w, atlas.h);
+  heroCv.classList.add("on");
 }
-function drawHero(t, force) {
-  if (!hero.frames || !heroCv) return;
-  const r = heroCv.getBoundingClientRect();
-  if (r.bottom < 0 || r.top > innerHeight) return;
-  const mx = P.x - r.left, my = P.y - r.top, R = 160;
-  const inside = !reduce && mx > -R && my > -R && mx < r.width + R && my < r.height + R;
-  const fi = Math.floor(t * 5) % hero.frames.length;
-  if (!force && fi === hero.fi && !inside && !hero.hot) return;
-  if (!force && inside && t - hero.last < 1 / 30) return;
-  hero.last = t; hero.fi = fi;
-  const g = heroCv.getContext("2d");
-  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, heroCv.width, heroCv.height);
-  g.drawImage(hero.frames[fi], 0, 0);
-  hero.hot = inside;
-  if (!inside) return;
-  const { cols, rows, cw, chh, dpr } = hero;
-  const x0 = Math.max(0, Math.floor((mx - R) / cw)), x1 = Math.min(cols - 1, Math.ceil((mx + R) / cw));
-  const y0 = Math.max(0, Math.floor((my - R) / chh)), y1 = Math.min(rows - 1, Math.ceil((my + R) / chh));
-  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const dx = (x + 0.5) * cw - mx, dy = (y + 0.5) * chh - my, near = Math.exp(-(dx * dx + dy * dy) / 9000);
-    if (near < 0.03) continue;
-    g.clearRect(x * cw * dpr, y * chh * dpr, Math.ceil(cw * dpr), Math.ceil(chh * dpr));
-    heroCell(g, x, y, fi * 0.42, near);
-  }
+/* variant 4: the photo resolves into ASCII under the cursor and as you scroll away */
+if (heroArt && HERO_V === "4") {
+  const setLens = (x, y, r) => { heroArt.style.setProperty("--mx", x + "px"); heroArt.style.setProperty("--my", y + "px"); heroArt.style.setProperty("--lr", r + "px"); };
+  setLens(-999, -999, 0);
+  addEventListener("pointermove", e => {
+    if (reduce) return;
+    const r = heroArt.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    const inside = x > -60 && y > -60 && x < r.width + 60 && y < r.height + 60;
+    setLens(x, y, inside ? (desk() ? 110 : 80) : 0);
+  }, { passive: true });
+  const sc = () => { const h = $(".hero").getBoundingClientRect(); heroArt.style.setProperty("--sp", clamp(-h.top / (h.height * 0.6), 0, 1).toFixed(3)); };
+  addEventListener("scroll", sc, { passive: true }); sc();
 }
 
 /* place words: the letters are filled with that place's photo, run through its own treatment */
@@ -643,7 +619,10 @@ async function buildTreats() {
     const cv = el._cv || document.createElement("canvas");
     cv.className = "tex"; cv.setAttribute("aria-hidden", "true");
     cv.width = W * k; cv.height = H * k; cv.style.width = W + "px"; cv.style.height = H + "px";
-    try { TREAT[el.dataset.treat](img, cv); } catch (e) { continue; }
+    let src2 = img;
+    const ct = +(el.dataset.cropTop || 0);
+    if (ct) { const c = document.createElement("canvas"); c.width = img.width; c.height = Math.round(img.height * (1 - ct)); c.getContext("2d").drawImage(img, 0, -img.height * ct); src2 = c; }
+    try { TREAT[el.dataset.treat](src2, cv); } catch (e) { continue; }
     if (!el._cv) el.append(cv);
     el._cv = cv; el._H = H;
     if (el.matches(".pw")) ww = Math.max(ww, wide);
@@ -741,6 +720,7 @@ function buildBeam() {
     pres[y * beamGrid.cols + x] = p * (1 - tm);
   }
   beamGrid.beam = { ox, oy, pres, last: -2 };
+  const sb = $(".beam .sbar"); if (sb) sb.style.width = (pitch * 10) + "px";
 }
 function beamFrame(t) {
   const G = beamGrid; if (!G || !G.beam || (!G.vis && G.beam.last !== -2)) return;
@@ -753,8 +733,7 @@ function beamFrame(t) {
   for (let y = 0; y < G.rows; y++) for (let x = 0; x < G.cols; x++) G.put(x, y, 0, 0, 0, pres[y * G.cols + x]);
   for (let n = 0; n < total; n++) {
     const rt = n / total * fill;
-    const a = smooth(rt, rt + 0.45, ph) * out;
-    if (a <= 0.003) continue;
+    const a = 0.25 + 0.75 * smooth(rt, rt + 0.45, ph) * out;
     const [x, y] = beamOrder[n];
     const v = BEAM[y * 40 + x];
     if (v < 0.085) continue;
@@ -776,13 +755,14 @@ function dotMask(img) {
   const p = CELL() * 2, c = document.createElement("canvas"); c.width = W; c.height = H;
   const g = c.getContext("2d"); g.fillStyle = "#fff";
   const T = Math.min(H * 0.22, p * 15), Bz = Math.min(H * 0.36, p * 26), side = img.closest(".turn") || img.matches(".me-portrait") ? Math.min(W * 0.16, p * 9) : 0;
-  const small = img.matches(".me-portrait"); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
+  const small = img.matches(".me-portrait"), blob = img.matches(".turn img, .press-photo"); const Tt = small ? side * 0.9 : T, Bb = small ? side * 0.9 : Bz;
   const cols = Math.ceil(W / p), rows = Math.ceil(H / p);
   for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
     const cy = (y + 0.5) * p, n = fbm(x * 0.11 + 3, y * 0.11);
     const cx = (x + 0.5) * p, n2 = fbm(x * 0.13 + 9, y * 0.13 + 4);
     let v = Math.min(smooth(0, Tt, cy - p + (n - 0.5) * Tt * 0.9), smooth(0, Bb, H - cy - p + (n - 0.5) * Bb * 0.9));
     if (side) v = Math.min(v, smooth(0, side, cx - p + (n2 - 0.5) * side * 0.9), smooth(0, side, W - cx - p + (n2 - 0.5) * side * 0.9));
+    if (blob) { const nx = (cx - W / 2) / (W / 2), ny = (cy - H / 2) / (H / 2); v = 1 - smooth(0.5, 1.0, Math.pow(Math.pow(Math.abs(nx), 2.6) + Math.pow(Math.abs(ny), 2.6), 1 / 2.6) + (n - 0.5) * 0.34); }
     if (v <= 0.02) continue;
     if (v >= 0.97) { g.fillRect(x * p, y * p, p + 0.5, p + 0.5); continue; }
     const s = p * Math.min(1, Math.sqrt(v) * 1.08);
@@ -923,12 +903,13 @@ function relayout() {
   kts.forEach(k => k.reset());
   fitAll();
   kts.forEach(k => k.measure());
-  $$(".photo img, .turn img, .me-portrait").forEach(dotMask);
+  $$(".photo img, .turn img, .press-photo").forEach(dotMask);
   capAlign();
   measureTex();
+  buildHeroArt();
   leds.forEach(l => { const o = ledWord(l.cv); l.draw = o.draw; });
   sprites.forEach(sp => sp.size());
-  buildHero(); buildStat(); buildBeam(); treatsDone = buildTreats();
+  buildStat(); buildBeam(); treatsDone = buildTreats();
   buildRail();
   if (beamGrid) beamGrid.beam && (beamGrid.beam.last = -2);
 }
@@ -960,7 +941,6 @@ function loop(now) {
   }
   railFrame();
   beamFrame(t);
-  if (!scrolling) drawHero(t);
   for (const g of grids) if (g.vis || reduce) g.draw(now);
   for (const l of leds) l.draw(t);
   for (const s of sprites) s.draw(t);
@@ -974,9 +954,7 @@ const boot = async () => {
     document.fonts.load('italic 900 100px "Anybody"', "Tjörn"),
     document.fonts.load('400 16px "Geist Mono"', "a"),
   ]).catch(() => {});
-  const img = window.E_DATA ? loadImg(window.E_DATA.portrait) : Promise.resolve(null);
-  await Promise.race([Promise.all([fonts, img]), new Promise(r => setTimeout(r, 900))]);
-  portraitImg = await img;
+  await Promise.race([fonts, new Promise(r => setTimeout(r, 900))]);
   await document.fonts.ready;
   lastW = innerWidth;
   relayout();
