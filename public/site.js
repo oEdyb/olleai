@@ -399,7 +399,7 @@ function sprite(cv) {
   let cell = 6, dpr = 1, last = "", spinAt = -1, vis = true;
   const g = cv.getContext("2d");
   const size = () => {
-    cell = desk() ? 4 : 3;
+    cell = +(cv.dataset[desk() ? "cd" : "cm"] || (desk() ? 4 : 3));
     dpr = devicePixelRatio || 1;
     cv.style.width = GW * cell + "px"; cv.style.height = GH * cell + "px";
     cv.width = Math.round(GW * cell * dpr); cv.height = Math.round(GH * cell * dpr);
@@ -1395,6 +1395,135 @@ document.addEventListener("click", e => {
   if (a.hash === location.hash) { e.preventDefault(); landHash(true); }
 });
 
+/* closing horizon: Tjörn sea at dusk in the site's hex halftone. The scene (sky, low islands, sea, shore rock)
+   is computed per dot; the GPU draws the dots at device pixels and drifts real Åstol sea ripples through them */
+const HZ = Object.assign({ p: [5, 4], hor: 0.56, sun: [0.7, 0.66], gain: 0.95, gam: 1.15, amp: 0.6, glow: 0.5, gw: 0.16, rip: 1500, rock: 0.45, rd: 0.3, olle: [0.13, 0.2] }, window.__hz || {});
+const hzEl = $(".horizon"), hzCv = hzEl && $(".hz-cv", hzEl), hzSprite = hzEl && $(".sprite", hzEl);
+const hzRip = hzEl ? loadImg("img/tjorn-sea-g1.jpg") : null;
+let HZS = null;
+const HZ_SKY = [[0, [0.86, 0.6, 0.46]], [0.08, [0.7, 0.46, 0.42]], [0.24, [0.36, 0.34, 0.46]], [0.48, [0.16, 0.22, 0.34]], [0.75, [0.06, 0.08, 0.13]], [1, [0.02, 0.025, 0.04]]];
+const hzSky = t => { let i = 0; while (i < HZ_SKY.length - 2 && t > HZ_SKY[i + 1][0]) i++; const [a, A] = HZ_SKY[i], [b, B] = HZ_SKY[i + 1], f = clamp((t - a) / (b - a), 0, 1); return A.map((v, k) => mix(v, B[k], f)); };
+/* the shore: a low granite rock rising from the left edge, flat on top where pixel Olle stands */
+const hzRock = (u, D) => { const e = D ? 0.32 : 0.46, s = clamp(u / e, 0, 1); return 0.7 + 0.015 * Math.sin(s * 19) * smooth(0.45, 0.7, s) + 0.32 * smooth(0.5, 1, s) - 0.06 * (1 - smooth(0, 0.35, s)); };
+function hzScene(W, H, p) {
+  const D = desk(), rh = p * Math.sqrt(3) / 2, cols = Math.ceil(W / p) + 2, rows = Math.ceil(H / rh) + 1, n = cols * rows;
+  const vh = HZ.hor, us = HZ.sun[D ? 0 : 1], ink = new Uint8Array(n * 4), aux = new Uint8Array(n * 4), aa = rh / H;
+  const isle = u => Math.max(0, 0.06 * smooth(0.04, 0.16, u) * (1 - smooth(0.26, 0.4, u)) * (0.7 + 0.6 * fbm(u * 14, 2.1)) + 0.028 * Math.exp(-(((u - 0.5) / 0.035) ** 2)) + 0.05 * smooth(0.84, 0.93, u) * (0.75 + 0.5 * fbm(u * 11, 5.3)));
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const x = (i + 0.5 * (j & 1)) * p, y = (j + 0.5) * rh, u = x / W, v = y / H, o = (j * cols + i) * 4, nz = fbm(u * 3.2 + 7, v * 2.4) - 0.5;
+    const gx = (u - us) * W / (H * HZ.gw * 4), glow = Math.exp(-gx * gx) * HZ.glow;
+    let c, water = 0, path = 0, depth = 0;
+    if (v < vh) {
+      const t = (vh - v) / vh;
+      c = hzSky(t).map((k, m) => k * (0.75 + 0.25 * glow) + [1, 0.76, 0.52][m] * glow * Math.exp(-t * t * 14));
+      const f = clamp((isle(u) - (vh - v)) / aa + 0.5, 0, 1), near = u < 0.45 ? 0.5 : 0.85;
+      c = c.map((k, m) => mix(k, k * 0.28 * near + [0.03, 0.035, 0.06][m], f));
+    } else {
+      depth = (v - vh) / (1 - vh);
+      const r = hzSky(Math.min(1, depth * 0.7 + 0.03)), fall = mix(0.55, 0.12, Math.pow(depth, 0.6));
+      path = Math.exp(-gx * gx * (1.6 - depth)) * (1 - depth * 0.55);
+      c = r.map((k, m) => k * fall + [1, 0.7, 0.45][m] * path * 0.45 * glow / HZ.glow);
+      water = 1;
+    }
+    const rk = hzRock(u, D), fr = clamp((v - rk) / aa + 0.5, 0, 1);
+    if (fr > 0) {
+      const dd = (v - rk) * H, lit = Math.exp(-dd / (H * HZ.rd)) * (0.75 + 0.5 * fbm(u * 40, v * 18)) * (0.55 + 0.45 * smooth(0, 0.22, u)), rim = Math.exp(-((dd / 2.2) ** 2)) * 0.35;
+      c = c.map((k, m) => mix(k, [0.66, 0.5, 0.44][m] * (lit * HZ.rock + rim), fr)); water *= 1 - fr; path *= 1 - fr;
+    }
+    const nt = fbm(u * 1.8 + 3.1, 0.7) - 0.5, pres = smooth(-0.04, 0.6, v + nt * 0.36 + nz * 0.12) * (1 - smooth(0.72, 0.95, v + nz * 0.14));
+    const L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], cov = clamp(Math.pow(L * HZ.gain, HZ.gam), 0, 1) * pres;
+    const k = 1 / Math.max(0.4, Math.max(...c));
+    ink[o] = clamp(c[0] * k, 0, 1) * 255; ink[o + 1] = clamp(c[1] * k, 0, 1) * 255; ink[o + 2] = clamp(c[2] * k, 0, 1) * 255; ink[o + 3] = cov * 255;
+    aux[o] = water * 255; aux[o + 1] = clamp(path, 0, 1) * 255; aux[o + 2] = depth * 255; aux[o + 3] = pres * 255;
+  }
+  return { cols, rows, p, rh, ink, aux, vh, rock: u => hzRock(u, D) };
+}
+const HZ_VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+const HZ_FS = `precision highp float;
+uniform sampler2D uInk,uAux,uRip;uniform vec2 uRes,uGrid;uniform float uP,uRh,uK,uT,uAmp,uRs,uSeaH;
+vec4 dotAt(vec2 q,vec2 px,out vec3 col){
+  if(q.x<0.||q.y<0.||q.x>=uGrid.x||q.y>=uGrid.y){col=vec3(0.);return vec4(0.);}
+  vec2 uv=(q+.5)/uGrid;vec4 ink=texture2D(uInk,uv),aux=texture2D(uAux,uv);
+  vec2 c=vec2((q.x+.5*mod(q.y,2.))*uP,(q.y+.5)*uRh);
+  float cov=ink.a;
+  if(aux.r>.5){
+    float d=aux.b,sx=c.x/(uRs*(.25+d*.9)),sy=.05+d*uSeaH/520.;
+    float r1=texture2D(uRip,vec2(sx+uT*.006,sy)).r,r2=texture2D(uRip,vec2(sx*1.7-uT*.004+.37,fract(sy*1.3+.21))).r;
+    float rip=(r1+r2)-1.;
+    cov=clamp(cov*(1.+uAmp*rip*(.35+aux.g*1.6))+aux.g*max(rip,0.)*.35*aux.a,0.,1.);
+  }
+  float r=uP*mix(sqrt(cov*.2757),.585,smoothstep(.86,1.,cov));
+  col=ink.rgb;
+  return vec4(c,r,cov);
+}
+void main(){
+  vec2 px=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y)/uK;
+  float j0=floor(px.y/uRh-.5);float best=0.;vec3 bc=vec3(0.);
+  for(int a=0;a<2;a++){float j=j0+float(a);float off=.5*mod(j,2.);float i0=floor(px.x/uP-off);
+    for(int b=0;b<2;b++){vec3 col;vec4 d=dotAt(vec2(i0+float(b),j),px,col);
+      if(d.z<=0.)continue;float s=clamp((d.z-distance(px,d.xy))*uK+.5,0.,1.);if(s>best){best=s;bc=col;}}}
+  gl_FragColor=vec4(bc*best,best);
+}`;
+function hzGL() {
+  const gl = hzCv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false });
+  if (!gl) return null;
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
+  const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, HZ_VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, HZ_FS)); gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
+  gl.useProgram(pr);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, "a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  return { gl, pr, U: n => gl.getUniformLocation(pr, n), tex: {} };
+}
+function hzTex(G, unit, name, w, h, data, wrap) {
+  const gl = G.gl, t = G.tex[name] || (G.tex[name] = gl.createTexture());
+  gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  if (data instanceof HTMLImageElement) gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, data);
+  else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  const f = wrap ? gl.LINEAR : gl.NEAREST, wr = wrap ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, f], [gl.TEXTURE_MAG_FILTER, f], [gl.TEXTURE_WRAP_S, wr], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  gl.uniform1i(G.U(name), unit);
+}
+async function buildHorizon() {
+  if (!hzEl) return;
+  const r = hzEl.getBoundingClientRect(), W = r.width, H = r.height; if (W < 10 || H < 10) return;
+  const t0 = performance.now(), k = Math.min(devicePixelRatio || 1, 3), p = HZ.p[desk() ? 0 : 1], Q = hzScene(W, H, p);
+  hzCv.width = Math.round(W * k); hzCv.height = Math.round(H * k);
+  if (hzSprite) { const u = HZ.olle[desk() ? 0 : 1]; hzSprite.style.left = u * W + "px"; hzSprite.style.top = Q.rock(u) * H + "px"; }
+  if (!HZS) {
+    HZS = { G: hzGL(), vis: false, last: -1 };
+    new IntersectionObserver(es => { HZS.vis = es[0].isIntersecting; }, { rootMargin: "100px" }).observe(hzEl);
+    if (HZS.G) hzCv.addEventListener("webglcontextlost", e => { e.preventDefault(); HZS.G = null; hzStatic(); });
+  }
+  HZS.Q = Q; HZS.k = k; HZS.W = W; HZS.H = H;
+  const G = HZS.G, rip = await hzRip;
+  if (G && rip && HZS.Q === Q) {
+    const gl = G.gl;
+    hzTex(G, 0, "uInk", Q.cols, Q.rows, Q.ink); hzTex(G, 1, "uAux", Q.cols, Q.rows, Q.aux); if (!G.tex.uRip) hzTex(G, 2, "uRip", 0, 0, rip, true);
+    gl.uniform2f(G.U("uGrid"), Q.cols, Q.rows); gl.uniform1f(G.U("uP"), Q.p); gl.uniform1f(G.U("uRh"), Q.rh); gl.uniform1f(G.U("uAmp"), HZ.amp); gl.uniform1f(G.U("uRs"), HZ.rip); gl.uniform1f(G.U("uSeaH"), H * (1 - Q.vh));
+    hzFrame(performance.now() / 1000, true);
+  } else hzStatic();
+  hzEl.dataset.ms = Math.round(performance.now() - t0); hzEl.dataset.gl = G ? "1" : "0";
+  hzEl.classList.add("on");
+}
+function hzFrame(t, force) {
+  if (!HZS || !HZS.G || !HZS.Q || (!force && (!HZS.vis || reduce || t - HZS.last < 1 / 30))) return;
+  HZS.last = t;
+  const { gl, U } = HZS.G;
+  gl.viewport(0, 0, hzCv.width, hzCv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(U("uRes"), hzCv.width, hzCv.height); gl.uniform1f(U("uK"), HZS.k); gl.uniform1f(U("uT"), reduce ? 40 : t % 2000);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function hzStatic() {
+  const Q = HZS && HZS.Q, g = Q && hzCv.getContext("2d"); if (!g) return;
+  g.setTransform(HZS.k, 0, 0, HZS.k, 0, 0); g.clearRect(0, 0, HZS.W, HZS.H);
+  for (let j = 0; j < Q.rows; j++) for (let i = 0; i < Q.cols; i++) {
+    const o = (j * Q.cols + i) * 4, cov = Q.ink[o + 3] / 255; if (cov < 0.01) continue;
+    const r = Q.p * mix(Math.sqrt(cov * 0.2757), 0.585, smooth(0.86, 1, cov));
+    g.fillStyle = `rgb(${Q.ink[o]},${Q.ink[o + 1]},${Q.ink[o + 2]})`; g.beginPath(); g.arc((i + 0.5 * (j & 1)) * Q.p, (j + 0.5) * Q.rh, r, 0, 6.2832); g.fill();
+  }
+}
+
 /* ---------- layout ---------- */
 function fitAll() {
   const pad = padPxNow();
@@ -1416,6 +1545,7 @@ function relayout() {
   buildHeroArt();
   leds.forEach(l => { const o = ledWord(l.cv); l.draw = o.draw; });
   sprites.forEach(sp => sp.size());
+  buildHorizon();
   buildStat(); buildBeam(); treatsDone = buildTreats();
   buildRail();
   if (beamGrid) beamGrid.beam && (beamGrid.beam.last = -2);
@@ -1454,6 +1584,7 @@ function loop(now) {
   for (const g of grids) if (g.vis || reduce) g.draw(now);
   for (const l of leds) l.draw(t);
   for (const s of sprites) s.draw(t);
+  if (!scrolling) hzFrame(t);
   if (!reduce) requestAnimationFrame(loop);
 }
 
