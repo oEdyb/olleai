@@ -45,6 +45,12 @@ const icon = n => SI[n]
   : `<svg class="ico s" viewBox="0 0 24 24" aria-hidden="true">${LU[n]}</svg>`;
 $$("i[data-icon]").forEach(el => { el.outerHTML = icon(el.dataset.icon); });
 
+/* ---------- video thumbnails: a missing image leaves the empty frame ---------- */
+const hideImg = im => { im.style.visibility = "hidden"; };
+$$(".vid .th img").forEach(im => { if (im.complete && !im.naturalWidth && im.src) hideImg(im); im.addEventListener("error", () => hideImg(im), { once: true }); });
+/* the TikTok strip starts at its first card, inside the gutter */
+$$(".vrow.tt").forEach(r => { r.scrollLeft = 0; requestAnimationFrame(() => { r.scrollLeft = 0; }); });
+
 /* ---------- menu (phone) ---------- */
 const menu = $(".menu"), menuBtn = $(".menu-btn");
 if (menu && menuBtn) {
@@ -58,7 +64,15 @@ if (menu && menuBtn) {
   menuBtn.addEventListener("click", () => set(true));
   $(".menu-close", menu).addEventListener("click", () => set(false));
   $$("a", menu).forEach(a => a.addEventListener("click", () => set(false)));
-  addEventListener("keydown", e => { if (e.key === "Escape" && menu.classList.contains("open")) set(false); });
+  addEventListener("keydown", e => {
+    if (!menu.classList.contains("open")) return;
+    if (e.key === "Escape") { set(false); return; }
+    if (e.key !== "Tab") return;
+    const f = $$("a[href], button", menu).filter(el => el.offsetParent !== null), first = f[0], last = f[f.length - 1];
+    if (!f.length) return;
+    if (e.shiftKey && (document.activeElement === first || !menu.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !menu.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  });
 }
 
 /* ---------- pointer: mouse anywhere, touch on type and grids ---------- */
@@ -107,7 +121,7 @@ class KT {
       if (part === " ") { el.append(" "); return; }
       const w = document.createElement("span"); w.className = "kw"; w.setAttribute("aria-hidden", "true");
       for (const c of part) {
-        const s = document.createElement("span"); s.className = "kc"; s.textContent = c; w.append(s);
+        const s = document.createElement("span"); s.className = c === "." ? "kc dot" : "kc"; s.textContent = c; w.append(s);
         this.ch.push({ el: s, w: this.rw, s: this.rs, lw: -1, ls: -1 });
       }
       el.append(w);
@@ -456,7 +470,7 @@ if (heroPhoto) {
   const shown = () => heroPhoto.classList.add("on");
   if (heroPhoto.complete && heroPhoto.naturalWidth) heroPhoto.decode().then(shown, shown); else heroPhoto.addEventListener("load", () => heroPhoto.decode().then(shown, shown), { once: true });
 }
-const heroSrcReady = HERO_V === "1" || HERO_GPU ? Promise.resolve(null) : loadImg("img/hero-soft-640-g3.webp").then(img => {
+const heroSrcReady = HERO_V === "1" || HERO_GPU ? Promise.resolve(null) : loadImg("/img/hero-soft-640-g3.webp").then(img => {
   heroImg = img;
   if (!img) return null;
   const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
@@ -592,7 +606,7 @@ if (heroArt && HERO_V === "4") {
 
 /* variants 8-10: the clean cutout redrawn on the GPU at device pixels.
    8 colour ASCII, glyphs picked by their measured ink; 9 ASCII with edges drawn as / \ | _; 10 Atkinson dither in a palette taken from the photo */
-const heroGpuImg = HERO_GPU ? loadImg(matchMedia("(min-width:900px), (min-resolution:2.5dppx)").matches ? "img/hero-src-1200-g6.webp" : "img/hero-src-720-g6.webp") : null;
+const heroGpuImg = HERO_GPU ? loadImg(matchMedia("(min-width:900px), (min-resolution:2.5dppx)").matches ? "/img/hero-src-1200-g6.webp" : "/img/hero-src-720-g6.webp") : null;
 const HT = Object.assign({ cell: [5, 3], weight: 560, lh: 1.0, glow: [0.4, 0.9], flick: 0.05, dpx: [2, 1.34], tone: [1.4, 0.8, 0.3, 5, 1.0], tone10: [0.5, 1.6, 0.3, 5, 0.85], cg: 0.9, ig: 0.7, ink0: 0.1,
   ramp8: " .:-=+*cs#%@", pool8: " .,:;-~=+*cosxzaeuv#%@", ramp9: " .:-=+*#", w9: [0.8, 1.1], pool9: " .,:;-~=+*cos#%@", edgeInk: [0.98, 0.93, 0.85], fade: [0.66, 0.97, 0.78, 1.04], spot: [0.45, 0.3, 0.62], sat: 1.12,
   edge: [0.4, 2.0, 0.02, 0.07, 0.3, 0.45], hyst: 0.35, glow9: 0.25, dk: 5, dx: ["#73849a", "#b3a49a", "#efe6da"], dsat: 0.95 }, window.__heroTune || {});
@@ -803,12 +817,14 @@ function heroDither(img, box, dpr) {
   const K = pal.length, P = pal.map(c => c.map(v => lin(v / 255))), idx = new Uint8Array(n);
   const near = (r, g, b) => { let bi = 0, bd = 9; for (let k = 0; k < K; k++) { const p = P[k], d = (p[0] - r) ** 2 + (p[1] - g) ** 2 * 1.4 + (p[2] - b) ** 2 * 0.6; if (d < bd) { bd = d; bi = k; } } return bi; };
   const W = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]];
+  /* small screens: where the fade is short, blue-noise holes dissolve the bottom instead of a flat brown edge */
+  const cut = desk() || !BN ? () => false : (x, y) => heroFade((x + 0.5) / cols, (y + 0.5) / rows) < BN[(y & 63) * 64 + (x & 63)] * 0.6;
   for (let y = 0; y < rows; y++) {
     const rev = y & 1;
     for (let j = 0; j < cols; j++) {
       const x = rev ? cols - 1 - j : j, i = y * cols + x;
       for (let c = 0; c < 3; c++) V[i * 3 + c] = clamp(V[i * 3 + c], -0.08, 1.08);
-      const k = wt[i] < 0.02 ? 0 : near(V[i * 3], V[i * 3 + 1], V[i * 3 + 2]), p = P[k], e = [0, 1, 2].map(c => (V[i * 3 + c] - p[c]) / 8);
+      const k = wt[i] < 0.02 || cut(x, y) ? 0 : near(V[i * 3], V[i * 3 + 1], V[i * 3 + 2]), p = P[k], e = [0, 1, 2].map(c => (V[i * 3 + c] - p[c]) / 8);
       idx[i] = k;
       for (const [dx, dy] of W) { const xx = x + (rev ? -dx : dx), yy = y + dy; if (xx >= 0 && xx < cols && yy < rows) { const q = (yy * cols + xx) * 3; V[q] += e[0]; V[q + 1] += e[1]; V[q + 2] += e[2]; } }
     }
@@ -946,7 +962,7 @@ function lumField(img, w, h) {
 let BN = null;
 async function blueNoise() {
   if (BN) return BN;
-  const i = await loadImg("img/bluenoise64.png"); if (!i) return null;
+  const i = await loadImg("/img/bluenoise64.png"); if (!i) return null;
   const c = document.createElement("canvas"); c.width = c.height = 64;
   const g = c.getContext("2d"); g.drawImage(i, 0, 0);
   const d = g.getImageData(0, 0, 64, 64).data; BN = new Float32Array(4096);
@@ -980,12 +996,12 @@ const TREAT = {
   waves(img, cv) {
     const k = DPR(), cw = CELL() * k, ch = cw * 1.45, W = cv.width, H = cv.height, S = sampleCover(img, W / cw, H / ch);
     const chars = "·-~≈≋%#", g = cv.getContext("2d");
-    g.fillStyle = "#101a22"; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#3d6078"; g.fillRect(0, 0, W, H);
     g.font = `600 ${ch * 0.95}px "Geist Mono", ui-monospace, monospace`; g.textAlign = "center"; g.textBaseline = "middle";
     for (let y = 0; y < S.h; y++) for (let x = 0; x < S.w; x++) {
       const q = (y * S.w + x) * 4, l = clamp((L(S.d, q) - 0.12) * 1.25, 0, 1);
-      const i = Math.min(chars.length - 1, Math.floor(l * chars.length)), b = mix(0.72, 1, l);
-      g.fillStyle = `rgb(${mix(S.d[q], 143, 0.6) * b | 0},${mix(S.d[q + 1], 214, 0.6) * b | 0},${mix(S.d[q + 2], 255, 0.65) * b | 0})`;
+      const i = Math.min(chars.length - 1, Math.floor(l * chars.length)), b = mix(0.86, 1.12, l);
+      g.fillStyle = `rgb(${Math.min(255, mix(S.d[q], 170, 0.62) * b) | 0},${Math.min(255, mix(S.d[q + 1], 226, 0.62) * b) | 0},${Math.min(255, mix(S.d[q + 2], 255, 0.66) * b) | 0})`;
       g.fillText(chars[i], (x + 0.5) * cw, (y + 0.5) * ch);
     }
   },
@@ -1167,9 +1183,10 @@ function dotFocus(img, W, H) {
   return [(W - dw) * (op[0] || 0.5) + f[0] * dw, (H - dh) * (op[1] ?? 0.5) + f[1] * dh, +(img.dataset.core || 0) * Math.min(W, H)];
 }
 function dotField(img, W, H, p) {
-  const kind = img.matches(".turn img") ? "blob" : img.matches(".press-photo") ? "foot" : "band";
+  const kind = img.matches(".turn img, .pj-shot img") ? "blob" : img.matches(".press-photo") ? "foot" : "band";
   const [fx, fy, fr] = dotFocus(img, W, H), L = Math.max(W, H) * DOT.feat, sd = (img.currentSrc || img.src).length * 0.37;
-  const nz = (x, y, k) => fbm(x / L + k * 7.1 + sd, y / L + k * 3.7) - 0.5, edge = (d, w) => smooth(0, w, d);
+  /* noise in a rotated frame with a third octave, so the frayed edge never lines up with the axes */
+  const nz = (x, y, k) => { const u = (x * 0.8 - y * 0.6) / L + k * 7.1 + sd, v = (x * 0.6 + y * 0.8) / L + k * 3.7; return fbm(u, v) * 0.8 + vnoise(u * 4.7 + 1.3, v * 4.7 + 9.1) * 0.2 - 0.5; }, edge = (d, w) => smooth(0, w, d);
   if (kind === "blob") {
     const core = +(img.dataset.core || 0.5);
     return (x, y) => {
@@ -1178,13 +1195,17 @@ function dotField(img, W, H, p) {
       return (1 - smooth(core, 1.02, q)) * edge(Math.min(x, W - x, y, H - y), p * 2);
     };
   }
-  const T = kind === "foot" ? 0 : Math.min(H * 0.28, 250), Bb = kind === "foot" ? H * 0.27 : Math.min(H * 0.38, 320), S = kind === "foot" ? W * 0.14 : 0;
+  /* data-band widens the fray for photos with plain sky, where every step would show */
+  const bk = +(img.dataset.band || 1);
+  const T = kind === "foot" ? 0 : Math.min(H * 0.28 * bk, 250 * bk), Bb = kind === "foot" ? H * 0.27 : Math.min(H * 0.38, 320), S = kind === "foot" ? W * 0.2 : Math.min(W * 0.1 * bk, 170 * bk);
   const band = (d, w, k, x, y) => smooth(0, 1, (d - w * DOT.lead) / (w * (1 - DOT.lead)) + nz(x, y, k) * DOT.wob * 1.6) * edge(d, w * DOT.lead);
+  /* sides: a wide, soft fray that always reaches zero at the frame edge */
+  const side = (d, k, x, y) => smooth(0.04, 1, d / S + (nz(x * 2.2, y * 2.2, k) * 0.75 + nz(x * 0.7, y * 0.7, k + 9) * 0.65)) * edge(d, p * 2.5);
   return (x, y) => {
     let v = Bb ? band(H - y, Bb, 2, x, y) : 1;
     if (T) v = Math.min(v, band(y, T, 3, x, y));
-    if (S) v = Math.min(v, band(x, S, 4, x, y), band(W - x, S, 5, x, y));
     if (fr) { const g = 1 - smooth(fr, fr * 1.9, Math.hypot(x - fx, (y - fy) * 1.15)); v = Math.max(v, g * Math.min(T ? band(y, T * 0.55, 6, x, y) : 1, band(H - y, Bb * 0.55, 7, x, y))); }
+    if (S) v = Math.min(v, side(x, 4, x, y), side(W - x, 5, x, y));
     return v;
   };
 }
@@ -1310,15 +1331,21 @@ function railFrame(force) {
 }
 
 /* ---------- copy bio ---------- */
+const copyStatus = $("#copy-status");
+const say = msg => { if (!copyStatus) return; copyStatus.textContent = ""; setTimeout(() => { copyStatus.textContent = msg; }, 30); };
 $$("[data-copy]").forEach(btn => {
   const lab = $(".lab", btn); let t = 0;
   btn.addEventListener("click", async () => {
     const src = $$(btn.dataset.copy).find(el => !el.hidden);
     if (!src) return;
-    try { await navigator.clipboard.writeText(src.innerText.trim()); } catch (e) { return; }
     if (!lab.dataset.orig) lab.dataset.orig = lab.textContent;
-    lab.textContent = lab.dataset.done || "Copied";
-    clearTimeout(t); t = setTimeout(() => { lab.textContent = lab.dataset.orig; }, 1600);
+    let ok = true;
+    try { if (!navigator.clipboard) throw 0; await navigator.clipboard.writeText(src.innerText.trim()); } catch (e) { ok = false; }
+    if (!ok) { const sel = getSelection(), rg = document.createRange(); rg.selectNodeContents(src); sel.removeAllRanges(); sel.addRange(rg); }
+    lab.textContent = ok ? lab.dataset.done || "Copied" : lab.dataset.fail || "Couldn't copy";
+    btn.classList.toggle("fail", !ok);
+    say(ok ? btn.dataset.ok || "Copied" : btn.dataset.no || "Couldn't copy. The text is selected, copy it by hand.");
+    clearTimeout(t); t = setTimeout(() => { lab.textContent = lab.dataset.orig; btn.classList.remove("fail"); }, ok ? 1600 : 3200);
   });
 });
 $$("[data-lang]").forEach(b => b.addEventListener("click", () => {
@@ -1399,7 +1426,7 @@ document.addEventListener("click", e => {
    is computed per dot; the GPU draws the dots at device pixels and drifts real Åstol sea ripples through them */
 const HZ = Object.assign({ p: [5, 4], hor: 0.56, sun: [0.7, 0.66], gain: 0.95, gam: 1.15, amp: 0.6, glow: 0.5, gw: 0.16, rip: 1500, rock: 0.45, rd: 0.3, olle: [0.13, 0.2] }, window.__hz || {});
 const hzEl = $(".horizon"), hzCv = hzEl && $(".hz-cv", hzEl), hzSprite = hzEl && $(".sprite", hzEl);
-const hzRip = hzEl ? loadImg("img/tjorn-sea-g1.jpg") : null;
+const hzRip = hzEl ? loadImg("/img/tjorn-sea-g1.jpg") : null;
 let HZS = null;
 const HZ_SKY = [[0, [0.86, 0.6, 0.46]], [0.08, [0.7, 0.46, 0.42]], [0.24, [0.36, 0.34, 0.46]], [0.48, [0.16, 0.22, 0.34]], [0.75, [0.06, 0.08, 0.13]], [1, [0.02, 0.025, 0.04]]];
 const hzSky = t => { let i = 0; while (i < HZ_SKY.length - 2 && t > HZ_SKY[i + 1][0]) i++; const [a, A] = HZ_SKY[i], [b, B] = HZ_SKY[i + 1], f = clamp((t - a) / (b - a), 0, 1); return A.map((v, k) => mix(v, B[k], f)); };
@@ -1539,7 +1566,7 @@ function relayout() {
   kts.forEach(k => k.reset());
   fitAll();
   kts.forEach(k => k.measure());
-  $$(".photo img, .turn img, .press-photo").forEach(dotMask);
+  $$(".photo img, .turn img, .press-photo, .pj-shot img").forEach(dotMask);
   capAlign();
   measureTex();
   buildHeroArt();
@@ -1592,7 +1619,6 @@ const boot = async () => {
   await blueNoise();
   const fonts = Promise.all([
     document.fonts.load('900 100px "Anybody"', "Olle3.9M"),
-    document.fonts.load('italic 900 100px "Anybody"', "Tjörn"),
     document.fonts.load('400 16px "Geist Mono"', "a"),
   ]).catch(() => {});
   await Promise.race([fonts, new Promise(r => setTimeout(r, 900))]);

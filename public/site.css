@@ -1,6 +1,6 @@
-@font-face{font-family:"Anybody";font-style:normal;font-weight:100 900;font-stretch:50% 150%;font-display:block;src:url(fonts/Anybody-normal.woff2) format("woff2")}
-@font-face{font-family:"Anybody";font-style:italic;font-weight:100 900;font-stretch:50% 150%;font-display:block;src:url(fonts/Anybody-italic.woff2) format("woff2")}
-@font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/GeistMono-normal.woff2) format("woff2")}
+@font-face{font-family:"Anybody";font-style:normal;font-weight:100 900;font-stretch:50% 150%;font-display:block;src:url(/fonts/Anybody-normal.woff2) format("woff2")}
+@font-face{font-family:"Anybody";font-style:italic;font-weight:100 900;font-stretch:50% 150%;font-display:block;src:url(/fonts/Anybody-italic.woff2) format("woff2")}
+@font-face{font-family:"Geist Mono";font-style:normal;font-weight:100 900;font-display:swap;src:url(/fonts/GeistMono-normal.woff2) format("woff2")}
 
 :root{--f1:12px;--f2:14px;--f3:17px;--f4:clamp(18px,1.5vw,22px);--f5:clamp(22px,2.1vw,30px);--f6:clamp(28px,2.7vw,40px);--f7:clamp(44px,5.4vw,80px);
   --bg:#0b0b0c;--bg-2:#121211;--ink:#f3efe7;--ink-2:#b3ada3;--ink-3:#827c73;--line:#262420;
@@ -13,7 +13,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{background:var(--bg);-webkit-text-size-adjust:100%;scroll-padding-top:var(--bar)}
-body{background:var(--bg);color:var(--ink);font-family:var(--display);font-stretch:100%;font-weight:400;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-stretch:100%;font-weight:400;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:clip}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -92,9 +92,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 @media (hover:hover){
   .place .yr,.place .pm,.place .pw{transition:opacity .25s,color .25s}
   .places:hover .place .yr,.places:hover .place .pm{opacity:.32}
-  .places:hover .place .pw{color:#4d4b48}
+  .places:hover .place .pw{opacity:.55}
   .places .place:hover .yr,.places .place:hover .pm{opacity:1}
-  .places .place:hover .pw{color:#fff}
+  .places .place:hover .pw{opacity:1}
   .places .place:hover .pw{font-stretch:140%}
 }
 .is-scrolling .places,.is-scrolling [data-kt]{pointer-events:none}
@@ -471,8 +471,8 @@ html.ready .led-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:re
 .place .pm .d{white-space:nowrap}
 
 /* ---- go-live fixes ---- */
-html.js .photo img,html.js .turn img,html.js .press-photo{opacity:0;transition:opacity .35s ease}
-html.js .photo img.masked,html.js .turn img.masked,html.js .press-photo.masked{opacity:1}
+html.js .photo img,html.js .turn img,html.js .press-photo,html.js .pj-shot img{opacity:0;transition:opacity .35s ease}
+html.js .photo img.masked,html.js .turn img.masked,html.js .press-photo.masked,html.js .pj-shot img.masked{opacity:1}
 .me-hero .l2{margin-top:.42em}
 /* laser: text and scan as one centred unit */
 .beam-in{grid-template-columns:minmax(0,34ch) auto;justify-content:center;gap:32px 72px}
@@ -610,3 +610,110 @@ html:not(.js) .hero-photo{opacity:1}
 .hz-cv{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .9s ease}
 .horizon.on .hz-cv{opacity:1}
 .horizon .sprite{position:absolute;margin:0;transform:translate(-50%,-100%);pointer-events:auto}
+
+/* ---- review 4 ---- */
+/* first paint already has the fitted size, so nothing jumps when the script fits it exactly */
+[data-fit]{font-size:calc((100vw - 2 * var(--pad)) * var(--fd, .5) / var(--r, 3))}
+.hero .name [data-fit]{--fd:.44;--fp:1}
+.me-hero .name [data-fit],.nf-hero .name [data-fit]{--fd:.5;--fp:1}
+.pw{--fd:.6;--fp:.84}
+.mail{--fd:.52;--fp:.8}
+.cw{--fd:.92;--fp:1}
+@media (max-width:899px){[data-fit]{font-size:calc((100vw - 2 * var(--pad)) * var(--fp, 1) / var(--r, 3))}}
+
+/* scroll rail stays readable over bright photos */
+.rail{filter:drop-shadow(0 0 1px rgba(0,0,0,.95)) drop-shadow(0 0 3px rgba(0,0,0,.55))}
+.rc{background:#34312c}
+.rc.on{background:#8a8378}
+
+/* 13.5K: the decimal point keeps its weight */
+.st .n .kc.dot{font-weight:760!important}
+
+/* place captions: one line when there is room, arrow right after the words */
+@media (min-width:1200px){.place .pm .d{white-space:nowrap;max-width:none}}
+
+/* videos: titles wrap in full, dates line up at the bottom of each row */
+.vid{grid-template-rows:auto 1fr auto}
+.vid .t,.vrow.tt .vid .t{display:block;height:auto;overflow:visible;-webkit-line-clamp:unset}
+.vid .t{min-height:44px}
+.vrow.tt .vid .t{min-height:40px}
+@media (max-width:899px){
+  .vid .t{min-height:40px}
+  .vrow.tt .vid .t{min-height:34px}
+  .vrow.tt{scroll-padding-inline:var(--pad)}
+}
+
+/* projects: list on the gutter, the YTAN frame beside it */
+.projects{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,42%);grid-template-areas:"h shot" "list shot";column-gap:5vw;align-items:start}
+.projects .h2{grid-area:h;margin:0 0 30px}
+.pj-list{grid-area:list;min-width:0}
+.pj-list .repo{max-width:none}
+.pj-list .lk{margin-top:24px}
+.pj-shot{grid-area:shot;align-self:center;display:block;position:relative}
+.pj-shot img{width:100%;height:auto;aspect-ratio:16/10}
+@media (max-width:899px){
+  .projects{grid-template-columns:minmax(0,1fr);grid-template-areas:"h" "shot" "list"}
+  .projects .h2{margin-bottom:8px}
+  .pj-shot{margin:0 calc(-1 * var(--pad)) 6px}
+}
+
+/* me: his portrait fills the right half of the first screen */
+.me-hero{min-height:min(86lvh,860px);display:flex;align-items:center;padding:4vh 0}
+.me-hero .hero-in{padding-top:28px;padding-bottom:56px}
+@media (max-width:899px){
+  .me-hero{min-height:0;display:block;padding:0 0 2vh}
+  .me-hero .hero-in{padding-top:calc(min(68vw,280px) * 1.25 + 28px)}
+}
+/* home, phone and tablet: clear space between the portrait and the name */
+@media (max-width:899px){.hero:not(.me-hero) .hero-in{padding-top:calc(min(68vw,280px) * 1.25 + 24px)}}
+
+/* everything starts on the site gutter */
+.beam-in{justify-content:start}
+.pk-w{display:grid;grid-template-columns:minmax(0,600px) minmax(0,380px);column-gap:clamp(48px,7vw,110px);row-gap:0;justify-content:start;align-items:start}
+.pk-w>*{grid-column:1;min-width:0}
+.pk-w>.pk-ph{grid-column:2;grid-row:1 / span 6;align-self:start}
+.pk-asof{display:block;margin:2px 0 0}
+@media (max-width:899px){
+  .pk-w{display:flex;flex-direction:column}
+  .pk .h2,.pk-ph{order:0}
+  .pk .h2{margin-bottom:20px}
+  .pk-ph{margin-bottom:28px}
+}
+.pk-h button.fail .lab,.pk-mail button.fail .lab{color:var(--fribourg)}
+
+/* one footer everywhere */
+.credits{text-wrap:pretty}
+.contact .lk2{margin-top:36px}
+.pk + .contact{padding-top:6vh}
+
+/* 404 */
+.nf-hero{min-height:min(70lvh,640px)}
+.nf-hero .link{margin-top:40px}
+@media (max-width:899px){.nf-hero .hero-in{padding-top:14vh}}
+/* caption arrow sits right after the last word, even when the caption wraps */
+.place .pm{display:block}
+.place .pm .d{display:inline}
+.place .pm .d .ico{margin-left:12px;vertical-align:-.15em;font-size:22px;color:var(--ink-3);transition:color .2s,transform .25s cubic-bezier(.2,.7,.2,1)}
+@media (hover:hover){.place:hover .pm .d .ico{color:var(--a);transform:translateX(6px)}}
+.place:focus-visible .pm .d .ico{color:var(--a)}
+@media (max-width:899px){.place .pm .d .ico{font-size:16px;margin-left:8px;color:var(--a)}}
+@media (min-width:1200px){.place .pm .d{white-space:normal}}
+@media (min-width:900px){.places{padding-top:2vh}}
+/* the LED "AI" has its final size from the first paint (9 x 7 cells of .15em), so the lede never rewraps */
+html.js .led-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.led{width:1.35em;height:1.05em}
+.led[data-k=".11"]{width:.99em;height:.77em}
+/* home hero, desktop: the name sits at a fixed height instead of re-centring when the lede reflows */
+@media (min-width:900px){
+  .hero:not(.me-hero):not(.nf-hero){align-items:flex-start}
+  .hero:not(.me-hero):not(.nf-hero) .hero-in{padding-top:clamp(28px, calc((100lvh - var(--bar)) / 2 - (100vw - 2 * var(--pad)) * .105 - 169px), 30vh)}
+}
+/* tablet: TikTok cards and the YTAN frame keep a phone-like scale */
+@media (min-width:600px) and (max-width:899px){
+  .vrow.tt .vid{flex-basis:31%}
+  .pj-shot{margin:0 0 6px;max-width:600px}
+}
+.pj-shot img{aspect-ratio:800/721}
+@media (min-width:900px){.pj-shot{max-width:520px;justify-self:center}}
+.place .pm .d{text-wrap:balance}
+.place .pm{text-wrap:balance}
