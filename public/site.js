@@ -1182,13 +1182,17 @@ function dotFocus(img, W, H) {
   const op = st.objectPosition.split(" ").map(v => parseFloat(v) / 100), dw = iw * s, dh = ih * s;
   return [(W - dw) * (op[0] || 0.5) + f[0] * dw, (H - dh) * (op[1] ?? 0.5) + f[1] * dh, +(img.dataset.core || 0) * Math.min(W, H)];
 }
-function dotField(img, W, H, p) {
+function dotParams(img, W, H, p) {
   const kind = img.matches(".turn img, .pj-shot img") ? "blob" : img.matches(".press-photo") ? "foot" : "band";
-  const [fx, fy, fr] = dotFocus(img, W, H), L = Math.max(W, H) * DOT.feat, sd = (img.currentSrc || img.src).length * 0.37;
+  const [fx, fy, fr] = dotFocus(img, W, H);
+  return { kind, fx, fy, fr, W, H, p, DOT, L: Math.max(W, H) * DOT.feat, sd: (img.currentSrc || img.src).length * 0.37, core: +(img.dataset.core || 0.5), bk: +(img.dataset.band || 1) };
+}
+function dotField(P) {
+  const { kind, fx, fy, fr, L, sd, W, H, p, DOT } = P;
   /* noise in a rotated frame with a third octave, so the frayed edge never lines up with the axes */
   const nz = (x, y, k) => { const u = (x * 0.8 - y * 0.6) / L + k * 7.1 + sd, v = (x * 0.6 + y * 0.8) / L + k * 3.7; return fbm(u, v) * 0.8 + vnoise(u * 4.7 + 1.3, v * 4.7 + 9.1) * 0.2 - 0.5; }, edge = (d, w) => smooth(0, w, d);
   if (kind === "blob") {
-    const core = +(img.dataset.core || 0.5);
+    const core = P.core;
     return (x, y) => {
       const dx = x - fx, dy = y - fy, nx = dx / (dx < 0 ? fx : W - fx), ny = dy / (dy < 0 ? fy : H - fy) * (dy < 0 ? 0.85 : 1);
       const q = Math.hypot(nx, ny) + nz(x, y, 1) * DOT.wob * DOT.bw;
@@ -1196,7 +1200,7 @@ function dotField(img, W, H, p) {
     };
   }
   /* data-band widens the fray for photos with plain sky, where every step would show */
-  const bk = +(img.dataset.band || 1);
+  const bk = P.bk;
   const T = kind === "foot" ? 0 : Math.min(H * 0.28 * bk, 250 * bk), Bb = kind === "foot" ? H * 0.27 : Math.min(H * 0.38, 320), S = kind === "foot" ? W * 0.2 : Math.min(W * 0.1 * bk, 170 * bk);
   const band = (d, w, k, x, y) => smooth(0, 1, (d - w * DOT.lead) / (w * (1 - DOT.lead)) + nz(x, y, k) * DOT.wob * 1.6) * edge(d, w * DOT.lead);
   /* sides: a wide, soft fray that always reaches zero at the frame edge */
@@ -1209,13 +1213,11 @@ function dotField(img, W, H, p) {
     return v;
   };
 }
-async function buildDots(img) {
-  const r = img.getBoundingClientRect(), W = r.width, H = r.height;
-  if (W < 4 || H < 4) return;
-  const t0 = performance.now(), k = Math.min(devicePixelRatio || 1, 3), Wd = Math.round(W * k), Hd = Math.round(H * k);
-  const p = DOT.p[desk() ? 0 : 1], B = DOT_B, R = DOT_R;
+/* the mask's pixels: pure, so it runs in a worker and never blocks scrolling */
+function dotPixels(P, k, B, R) {
+  const { W, H, p } = P, Wd = Math.round(W * k), Hd = Math.round(H * k);
   const e1x = B[0] * p, e1y = B[1] * p, e2x = B[2] * p, e2y = B[3] * p, det = e1x * e2y - e2x * e1y;
-  const ia = e2y / det, ib = -e2x / det, ic = -e1y / det, id = e1x / det, field = dotField(img, W, H, p);
+  const ia = e2y / det, ib = -e2x / det, ic = -e1y / det, id = e1x / det, field = dotField(P);
   const corners = [[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => [ia * x + ib * y, ic * x + id * y]);
   const i0 = Math.floor(Math.min(...corners.map(c => c[0]))) - 1, j0 = Math.floor(Math.min(...corners.map(c => c[1]))) - 1;
   const ni = Math.ceil(Math.max(...corners.map(c => c[0]))) - i0 + 2, nj = Math.ceil(Math.max(...corners.map(c => c[1]))) - j0 + 2;
@@ -1227,14 +1229,10 @@ async function buildDots(img) {
     const v = clamp(field(clamp(x, 0, W), clamp(y, 0, H)), 0, 1);
     RR[q] = v >= 0.999 ? full : R[Math.round(v * 256)] * p;
   }
-  const c = document.createElement("canvas"); c.width = Wd; c.height = Hd;
-  const g = c.getContext("2d"), im = g.createImageData(Wd, Hd), o = new Uint32Array(im.data.buffer);
-  const rowFull = new Uint8Array(nj);
+  const o = new Uint32Array(Wd * Hd), rowFull = new Uint8Array(nj);
   for (let j = 0; j < nj; j++) { let f = 1; for (let i = 0; i < ni && f; i++) { const x = CX[j * ni + i]; if (x > -p && x < W + p && RR[j * ni + i] < full) f = 0; } rowFull[j] = f; }
   const ink = (qq, rr, x, y) => { const dx = x - CX[qq], dy = y - CY[qq]; return (rr - Math.sqrt(dx * dx + dy * dy)) * k + 0.5; };
-  let ts = performance.now();
   for (let Y = 0; Y < Hd; Y++) {
-    if ((Y & 15) === 0 && performance.now() - ts > 8) { await new Promise(res => setTimeout(res)); ts = performance.now(); }
     const y = (Y + 0.5) / k, jr = (id * y - j0) | 0;
     if (rowFull[jr] && rowFull[jr + 1]) { o.fill(0xff000000, Y * Wd, Y * Wd + Wd); continue; }
     for (let X = 0; X < Wd; X++) {
@@ -1249,8 +1247,37 @@ async function buildDots(img) {
       if (m > 0) o[Y * Wd + X] = ((m >= 1 ? 255 : m * 255) << 24) >>> 0;
     }
   }
-  g.putImageData(im, 0, 0);
-  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  return { o, Wd, Hd };
+}
+async function dotBlobHere(P, k) {
+  const { o, Wd, Hd } = dotPixels(P, k, DOT_B, DOT_R);
+  const c = document.createElement("canvas"); c.width = Wd; c.height = Hd;
+  c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(o.buffer), Wd, Hd), 0, 0);
+  return new Promise(res => c.toBlob(res, "image/png"));
+}
+/* worker: same functions, posted as source; falls back to the main thread if anything is missing */
+let dotW = null, dotSeq = 0;
+const dotWait = new Map();
+try {
+  if ("Worker" in window && "OffscreenCanvas" in window) {
+    const src = [`const clamp=${clamp};`, `const mix=${mix};`, `const smooth=${smooth};`, `const hash=${hash};`, `const fbm=${fbm};`, String(vnoise), String(dotField), String(dotPixels),
+      `onmessage=async e=>{const{id,P,k,B,R}=e.data;try{const{o,Wd,Hd}=dotPixels(P,k,B,R);const c=new OffscreenCanvas(Wd,Hd);c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(o.buffer),Wd,Hd),0,0);postMessage({id,blob:await c.convertToBlob({type:"image/png"})});}catch(err){postMessage({id,err:String(err)});}};`].join("\n");
+    dotW = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+    dotW.onmessage = e => { const f = dotWait.get(e.data.id); if (f) { dotWait.delete(e.data.id); f(e.data); } };
+    dotW.onerror = () => { dotW = null; dotWait.forEach(f => f({ err: "worker" })); dotWait.clear(); };
+  }
+} catch (e) { dotW = null; }
+function dotBlob(P, k) {
+  if (!dotW) return dotBlobHere(P, k);
+  const id = ++dotSeq;
+  return new Promise(res => { dotWait.set(id, res); dotW.postMessage({ id, P, k, B: DOT_B, R: DOT_R }); })
+    .then(r => (r.err ? dotBlobHere(P, k) : r.blob));
+}
+async function buildDots(img) {
+  const r = img.getBoundingClientRect(), W = r.width, H = r.height;
+  if (W < 4 || H < 4) return;
+  const t0 = performance.now(), k = Math.min(devicePixelRatio || 1, 3);
+  const blob = await dotBlob(dotParams(img, W, H, DOT.p[desk() ? 0 : 1]), k);
   if (!blob) return;
   const url = URL.createObjectURL(blob), old = dotURLs.get(img);
   img.style.webkitMaskImage = img.style.maskImage = `url(${url})`;
@@ -1578,8 +1605,10 @@ function relayout() {
   if (beamGrid) beamGrid.beam && (beamGrid.beam.last = -2);
 }
 let lastW = 0, treatsDone = Promise.resolve();
+/* height-only resizes (the phone's address bar while scrolling) just re-place the rail, once things settle */
+let railT = 0;
 addEventListener("resize", () => {
-  if (Math.abs(innerWidth - lastW) < 2) { buildRail(); return; }
+  if (Math.abs(innerWidth - lastW) < 2) { clearTimeout(railT); railT = setTimeout(buildRail, 250); return; }
   lastW = innerWidth; relayout();
 });
 
