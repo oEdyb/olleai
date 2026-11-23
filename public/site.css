@@ -680,6 +680,13 @@ html:not(.js) .hero-photo{opacity:1}
   .pk-ph{margin-bottom:28px}
 }
 .pk-h button.fail .lab,.pk-mail button.fail .lab{color:var(--fribourg)}
+.reach{display:flex;align-items:center;flex-wrap:wrap;gap:6px 18px;margin-top:32px}
+.reach .h{font-family:var(--mono);font-size:var(--f1);letter-spacing:.04em;color:var(--ink-3)}
+.reach a{font-size:var(--f4);font-weight:600;text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:1.5px;text-decoration-color:var(--ink-3)}
+.reach a:hover{text-decoration-color:var(--ink)}
+.reach button{display:inline-flex;align-items:center;gap:7px;font-size:var(--f2);font-weight:600;color:var(--ink-2);padding:6px 0}
+.reach button:hover{color:var(--ink)}
+.reach button.fail .lab{color:var(--fribourg)}
 
 /* one footer everywhere */
 .credits{text-wrap:pretty}
