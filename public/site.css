@@ -233,8 +233,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* timeline of places */
 .places{padding:10vh 0 6vh;position:relative}
-.place{display:grid;grid-template-columns:var(--tl) minmax(0,1fr) auto;align-items:center;padding:0 var(--pad);overflow:visible;--tl:118px}
-.place .yr{position:relative;align-self:stretch;display:flex;align-items:center;font-family:var(--mono);font-size:var(--f2);letter-spacing:.02em;color:var(--a);padding-left:22px}
+.place{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:0 var(--pad);overflow:visible;--tl:118px}
+.place .yr{position:relative;align-self:stretch;display:flex;align-items:center;font-family:var(--mono);font-size:var(--f2);letter-spacing:.02em;color:var(--a);padding-left:22px;white-space:nowrap;box-sizing:border-box;width:max(var(--tl),calc(7ch + 57px))}
 .place .yr::before{content:"";position:absolute;left:4px;top:0;bottom:0;width:1.5px;background:#2c2a26}
 .place:first-of-type .yr::before{top:50%}
 .place:last-of-type .yr::before{bottom:50%}
@@ -290,7 +290,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 @media (max-width:899px){
   .lk{gap:6px 22px;font-size:var(--f3)}
-  .place{--tl:74px;grid-template-columns:var(--tl) minmax(0,1fr)}
+  .place{--tl:74px;grid-template-columns:auto minmax(0,1fr)}
   .place .yr{font-size:var(--f1);padding-left:16px}
   .place .yr::after{width:8px;height:8px;margin-top:-4px;left:1px}
   .place .pm{display:none}
@@ -432,7 +432,7 @@ html.ready .led-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:re
 .is-scrolling .places,.is-scrolling [data-kt]{pointer-events:auto}
 @media (prefers-reduced-motion:reduce){.places .place:hover .pw{font-stretch:130%}}
 /* places: one caption column right after the widest word; timeline line never tears */
-.place{grid-template-columns:var(--tl) var(--ww,auto) minmax(0,1fr)}
+.place{grid-template-columns:auto var(--ww,auto) minmax(0,1fr)}
 .place .pm{justify-content:flex-start;text-align:left;padding-left:48px;transform:translateY(var(--cs,0px))}
 .place .yr{transform:none}
 .place .yr b{font-weight:inherit;display:inline-block;transform:translateY(var(--cs,0px))}
